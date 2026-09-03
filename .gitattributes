@@ -1,0 +1,5 @@
+# Batch files must arrive with CRLF endings whatever the cloner's settings.
+# A .bat checked out with LF endings can be mis-parsed by cmd, typically
+# breaking labels and goto, which is exactly what start.bat is built from.
+*.bat text eol=crlf
+*.cmd text eol=crlf
