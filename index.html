@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seven Kilometers an Hour</title>
+<meta name="description" content="Dhaka's traffic now moves at walking pace. How it got there, what it costs, and what would change it.">
+<meta name="author" content="Advanced AI Lab Data Studio">
+<meta name="theme-color" content="#20130E">
+<!-- The page sets its own grounds section by section and does not follow the
+     OS theme. Declaring "light dark" made the browser paint a black canvas
+     before the stylesheet arrived, and rendered the calculator's inputs in
+     dark-mode chrome against a crimson panel. -->
+<meta name="color-scheme" content="light">
+<!-- First paint is the cover's own ink, so there is no flash of the wrong
+     ground on a slow connection before the stylesheet lands. -->
+<style>html{background:#20130E}</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Seven Kilometers an Hour">
+<meta property="og:description" content="Dhaka's traffic now moves at walking pace. How it got there, what it costs, and what would change it.">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Seven Kilometers an Hour">
+<meta name="twitter:description" content="Dhaka's traffic now moves at walking pace. How it got there, what it costs, and what would change it.">
+<link rel="preload" href="/fonts/fraunces-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/karla-400.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Linked, not imported from the entry module. CSS pulled in by JavaScript is
+     injected after the first paint, which is what made the page flash unstyled
+     on reload. A stylesheet link blocks rendering until it has loaded, which is
+     exactly what is wanted here. Order is the cascade order. -->
+<link rel="stylesheet" href="/src/styles/tokens.css">
+<link rel="stylesheet" href="/src/styles/base.css">
+<link rel="stylesheet" href="/src/styles/sections.css">
+<script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+<div class="grain"></div>
+
+<noscript>
+  <p class="noscript">This story is drawn in the browser, so the charts and the street simulation need JavaScript. The text below still reads without it.</p>
+</noscript>
+
+<!-- ============ 1. THE JAM (HERO) ============ -->
+<header class="jam" id="cover-sec">
+  <canvas id="lanes"></canvas>
+  <div class="jam-fade"></div>
+  <div class="jam-inner">
+    <p class="kicker">Dhaka, Bangladesh</p>
+    <div class="jam-body">
+    <h1>Seven kilometers an hour</h1>
+    <p class="lede">That is how fast this city moves now. A decade ago it was three times quicker. Keep scrolling and you will cover more ground than the traffic below you.</p>
+
+    <div class="hero-stats">
+      <div class="hero-stat-pill"><b>7.0 km/h</b> City Average</div>
+      <div class="hero-stat-pill"><b>#1 Slowest</b> of 1,200 Cities</div>
+      <div class="hero-stat-pill"><b>32 lakh hours</b> Lost daily</div>
+    </div>
+
+    <p class="cover-src" data-source="wb-2017"></p>
+    <p class="scrollcue">Scroll</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 2. THE RACE ============ -->
+<section class="race" id="race-sec">
+  <div class="wrap">
+    <h2>A car loses this race</h2>
+    <p class="lede">At the worst hour of the day, BUET measured surface traffic in Dhaka at 4.8 kilometers an hour. A comfortable walking pace is about five. Above the same street, the elevated Metro Rail runs at 35.</p>
+    <svg class="race-svg" id="race" role="img" aria-label="A car, a pedestrian, and the Metro Rail cross one kilometer; the Metro arrives in seconds while the car lags behind foot traffic."></svg>
+    <p class="race-note">One kilometer, three ways, running at once. All three markers share a single track and cover it in exact proportion to their published speeds, so the gap you see between the car and the walker is the real one: about thirty seconds over a kilometer, in the walker's favor. The clock is compressed — the walker takes twelve minutes in life and eight seconds here — but nothing else is. The race restarts itself.</p>
+    <p class="srcline">Surface car speed <span data-source="buet-2022"></span> · walking speed <span data-source="bohannon-2011"></span> · Metro Rail MRT-6 <span data-source="dmtcl-2023"></span></p>
+  </div>
+</section>
+
+<!-- ============ 3. THE RECORD (HISTORY) ============ -->
+<section class="record" id="record-sec">
+  <div class="wrap">
+    <h2>How it got this slow</h2>
+    <p class="lede">Different research teams have measured Dhaka at different moments and in different ways. Put every published figure on one axis and the line only travels in one direction. Hover a point, or tab through them, to see who measured it and what they measured.</p>
+    <svg class="history-svg" id="history" role="img" aria-label="Published measurements of Dhaka's traffic speed, falling from 21 km/h around 2007 to 4.8 km/h in 2022, with a World Bank projection of 4 km/h by 2035."></svg>
+    <p class="readout" id="historyReadout" role="status" aria-live="polite"></p>
+    <p class="record-note">A city-wide average and a peak-hour average measure different things, so each point carries its own label. The 2035 figure is a projection, not an observation.</p>
+
+    <h3 class="record-why">The roads never grew</h3>
+    <p class="record-why-lede">Every other chart on this page is a symptom. This is the cause. Over the decade to 2005, the traffic on Dhaka's roads grew twenty-seven times faster than the roads carrying it.</p>
+    <svg class="supply-svg" id="supplyDemand" role="img" aria-label="Between 1995 and 2005, Dhaka's road surface grew 5 percent, its population 50 percent, and its traffic 134 percent."></svg>
+    <p class="srcline">Change from 1995 to 2005 <span data-source="wb-2017"></span></p>
+  </div>
+</section>
+
+<!-- ============ 4. 24-HOUR RADIAL CLOCK ============ -->
+<section class="clock" id="clock-sec">
+  <div class="wrap">
+    <div class="clock-grid">
+      <div>
+        <h2>The city breathes twice a day</h2>
+        <p class="lede">Every spoke is one hour. The longer and greener it reaches, the faster the roads are running. Dhaka falls apart before 9:00 AM, half recovers over lunch, then sinks again and stays there until well past 10:00 PM.</p>
+        <div class="key">
+          <span><i style="background:#B4172F"></i> crawling</span>
+          <span><i style="background:#F2A310"></i> slow</span>
+          <span><i style="background:#7FBF4A"></i> moving</span>
+          <span><i style="background:#3FA88A"></i> clear</span>
+        </div>
+        <button class="ghost" id="clockTableToggle" aria-expanded="false" aria-controls="clockTable">Show the numbers</button>
+        <p class="clock-hint">Click any hour spoke to inspect the 3D street simulation at that time.</p>
+        <div id="clockTable" hidden></div>
+      </div>
+      <svg class="clock-svg" id="clock" viewBox="0 0 720 540" role="img" aria-label="A radial clock of average traffic speed for each hour of the day."></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. CORRIDOR MAP ============ -->
+<section class="map" id="map-sec">
+  <div class="wrap">
+    <div class="map-header">
+      <div>
+        <h2>The gridlock has a spine</h2>
+        <p class="lede">Colored by peak-hour speed, one route stands out: the spine running the length of the city from Uttara down to Motijheel. When one link seizes, its neighbors follow within minutes.</p>
+      </div>
+      <button class="map-btn" id="mapMetroToggle" aria-pressed="true">Hide Metro Rail (MRT-6)</button>
+    </div>
+    <svg class="map-svg" id="map" viewBox="0 0 900 640" role="img" aria-label="Map of Dhaka's main corridors colored by peak-hour speed with elevated MRT Line 6 overlay. Click any road to inspect."></svg>
+  </div>
+</section>
+
+<!-- ============ 6. 3D STREET SIMULATION ============ -->
+<section class="street" id="street-sec">
+  <div class="wrap">
+    <h2>Now stand in it</h2>
+    <p class="lede">This is a live simulation, not a video. Every vehicle below picks its own speed from the gap in front of it, the way drivers do, and the queues you will watch form were never drawn by anyone. Change the hour and the road, and see what the same street becomes.</p>
+
+    <div class="stage" id="stage">
+      <div class="stage-hud">
+        <div class="hud-time" id="hudTime">6:00 PM</div>
+        <div class="hud-speed" id="hudSpeed">Traffic moving at 5.0 km/h</div>
+      </div>
+      <p class="hud-hint">Drag to look around</p>
+    </div>
+    <p class="nowebgl" id="nowebgl">This simulation requires WebGL, which is unavailable in this browser.</p>
+
+    <div class="ctrls">
+      <div>
+        <p class="ctrl-label">Hour of the day</p>
+        <input type="range" id="hourSlider" min="0" max="23" step="1" value="18" aria-label="Hour of the day">
+        <div class="tickrow"><span>Midnight</span><span>6 AM</span><span>Noon</span><span>6 PM</span><span>11 PM</span></div>
+      </div>
+      <div>
+        <p class="ctrl-label">Which corridor</p>
+        <div class="chips" role="group" aria-label="Choose a corridor">
+          <button data-r="0" aria-pressed="true">Mohakhali to Farmgate</button>
+          <button data-r="1" aria-pressed="false">Airport Road</button>
+          <button data-r="2" aria-pressed="false">Mirpur Road</button>
+          <button data-r="3" aria-pressed="false">Uttara to Airport</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-ctrls">
+      <div>
+        <p class="ctrl-label">Camera Angle</p>
+        <div class="cam-presets" role="group" aria-label="Camera Angle Presets">
+          <button data-cam="orbit" aria-pressed="true">Drone orbit</button>
+          <button data-cam="overpass" aria-pressed="false">Overpass</button>
+          <button data-cam="driver" aria-pressed="false">Street level</button>
+        </div>
+      </div>
+      <div>
+        <p class="ctrl-label">Weather Conditions</p>
+        <button class="rain-btn" id="rainToggle" aria-pressed="false">Monsoon rain</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. WHAT IT COSTS YOU ============ -->
+<section class="cost" id="cost-sec">
+  <div class="wrap">
+    <h2>So what does it take from you?</h2>
+    <p class="lede">Pick a standard corridor, or work out your own commute. Every square below is one day you travel, and the pale ones are the days you spend sitting still.</p>
+
+    <div class="cost-tabs" role="tablist" aria-label="Cost Mode Switcher">
+      <button class="cost-tab" id="costTabPreset" aria-pressed="true">Standard Corridors</button>
+      <button class="cost-tab" id="costTabCustom" aria-pressed="false">Personal Commute Calculator</button>
+    </div>
+
+    <!-- Panel 1: Preset routes -->
+    <div id="costPresetPanel">
+      <div class="picker" role="group" aria-label="Choose your corridor">
+        <button data-i="0" aria-pressed="true">Mohakhali to Farmgate</button>
+        <button data-i="1" aria-pressed="false">Airport Road to Banani</button>
+        <button data-i="2" aria-pressed="false">Farmgate to Shahbagh</button>
+        <button data-i="3" aria-pressed="false">Mirpur to Shyamoli</button>
+        <button data-i="4" aria-pressed="false">Uttara to Airport</button>
+      </div>
+    </div>
+
+    <!-- Panel 2: Personal Calculator -->
+    <div id="costCustomPanel" hidden>
+      <div class="calc-panel">
+        <div class="calc-field">
+          <label for="commuteMinutesSlider">One-Way Commute Time</label>
+          <input type="range" id="commuteMinutesSlider" min="15" max="180" step="5" value="60">
+          <div class="calc-val" id="commuteMinutesVal">60 mins</div>
+        </div>
+        <div class="calc-field">
+          <label for="commuteDaysSelect">Commute Days Per Week</label>
+          <select id="commuteDaysSelect">
+            <option value="5" selected>5 days / week (Sun–Thu)</option>
+            <option value="6">6 days / week (Sun–Fri)</option>
+            <option value="7">7 days / week (Everyday)</option>
+          </select>
+        </div>
+        <div class="calc-field">
+          <label for="commuteIncomeInput">Monthly Salary (BDT, Optional)</label>
+          <input type="number" id="commuteIncomeInput" min="5000" step="5000" value="45000" placeholder="45000">
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-grid">
+      <div>
+        <div class="bignum" id="days">52</div>
+        <div class="bigunit" id="unit">working days a year</div>
+        <p class="bigsub" id="hint">412 hours a year on Mohakhali to Farmgate: 1 h 35 m of every working day.</p>
+        <button class="copy-stat-btn" id="copyStatBtn">Copy this figure</button>
+      </div>
+      <div>
+        <svg class="year-svg" id="year" viewBox="0 0 1000 612" role="img" aria-label="A grid of one square per working day, with the days lost to traffic highlighted."></svg>
+        <p class="year-cap" id="yearCap">260 working days a year, Sunday to Thursday. The pale squares are yours to lose.</p>
+      </div>
+    </div>
+
+    <!-- Opportunity Equivalents -->
+    <div class="equiv-grid">
+      <div class="equiv-item">
+        <div class="equiv-num" id="equivBooks">59</div>
+        <div class="equiv-lab">Books you could have read instead</div>
+      </div>
+      <div class="equiv-item">
+        <div class="equiv-num" id="equivMovies">187</div>
+        <div class="equiv-lab">Films you could have watched instead</div>
+      </div>
+      <div class="equiv-item">
+        <div class="equiv-num" id="equivMoney">Tk 105,340</div>
+        <div class="equiv-lab">Those hours priced at a Tk 45,000 monthly salary</div>
+      </div>
+    </div>
+
+    <p class="cost-caveat">This calculation models one kind of commuter: someone with a fixed workplace, a five-day week, and a salary to price the lost hours against. It is not most of Dhaka. The people who lose most to this traffic are the ones who cannot buy their way around it — who walk because the fare is the choice between transport and something else, or who ride standing in a bus for two hours each way on a wage no calculator here is set up to value. Their cost does not appear in the grid above.</p>
+
+    <h3 class="facts-head">Across the whole city, counted by people who counted it</h3>
+    <div class="facts" id="facts"></div>
+  </div>
+</section>
+
+<!-- ============ 8. HOW DHAKA UNJAMS ============ -->
+<section class="solutions" id="solutions-sec">
+  <div class="wrap">
+    <h2>How Dhaka unjams</h2>
+    <p class="lede">None of this is weather. Every road on this page was built, widened, or left alone by a decision, and the interventions below are the ones Dhaka is actually arguing about. Turn them on to see how much road speed each one would have to return to make the city move again.</p>
+
+    <div class="sol-board">
+      <p class="sol-kicker">Scenario</p>
+      <p class="sol-total" id="projectedSpeedGauge" role="status" aria-live="polite">17.5 <em>km/h</em></p>
+      <p class="sol-sub" id="projectedSpeedGain">+10.5 km/h above the 7 km/h the city manages today</p>
+
+      <div class="sol-track" id="solTrack"></div>
+      <div class="sol-axis">
+        <span>0</span>
+        <span class="sol-axis-goal">25 km/h — what the roads already do at 3am</span>
+      </div>
+      <p class="sol-caveat">Each figure below is a modeling assumption for what an intervention could return, not a published forecast. They are stacked here to show relative weight, not to predict a date.</p>
+    </div>
+
+    <div class="sol-list" id="solutionsGrid" role="group" aria-label="Interventions to include in the scenario"></div>
+  </div>
+</section>
+
+<!-- ============ 9. NIGHT SECTION ============ -->
+<section class="night" id="night-sec">
+  <svg class="night-svg" id="night" viewBox="0 0 400 400" role="img" aria-label="A quiet ring showing the hours when the roads run free."></svg>
+  <h2>Between midnight and 5:00 AM, it is a different city</h2>
+  <p class="lede">For five hours a night the roads carry only what they were built to carry, and Dhaka moves at 25 kilometers an hour. Then the sun comes up.</p>
+</section>
+
+<!-- ============ 10. SOURCES & DATA HUB ============ -->
+<!-- ============ METHODOLOGY ============ -->
+<!-- ============ PLAN A TRIP ============ -->
+<section class="trip" id="trip-sec">
+  <div class="wrap">
+    <h2>Plan a trip</h2>
+    <p class="lede">Pick where you are going and when. The answer is not one number — it is the shape of the evening, and the difference between leaving at five and leaving at eight.</p>
+
+    <div class="trip-form">
+      <div class="trip-field">
+        <label for="tripFrom">From</label>
+        <select id="tripFrom"></select>
+      </div>
+      <button class="trip-swap" id="tripSwap" type="button" aria-label="Swap origin and destination">&#8646;</button>
+      <div class="trip-field">
+        <label for="tripTo">To</label>
+        <select id="tripTo"></select>
+      </div>
+      <div class="trip-field">
+        <label for="tripDate">Date</label>
+        <input type="date" id="tripDate">
+      </div>
+      <div class="trip-field">
+        <label for="tripWindow">When</label>
+        <select id="tripWindow"></select>
+      </div>
+    </div>
+
+    <div class="trip-answer">
+      <p class="trip-headline" id="tripHeadline" role="status" aria-live="polite"></p>
+      <p class="trip-detail" id="tripDetail"></p>
+
+      <h3 class="trip-sub">If you leave at</h3>
+      <div class="trip-curve" id="tripCurve"></div>
+
+      <h3 class="trip-sub">Your options</h3>
+      <ol class="trip-routes" id="tripRoutes"></ol>
+    </div>
+
+    <svg class="trip-map" id="tripMap" role="img" aria-label="Route map"></svg>
+
+    <p class="trip-note" id="tripProvenance"></p>
+    <p class="trip-note">Journey times are estimates, not a forecast of one particular day. A date two days out can only tell you what a typical working day or weekend looks like — nobody can know that evening's incidents in advance. Road speeds here are modeled; the collector that would replace them with measured times is published with the project.</p>
+  </div>
+</section>
+
+<section class="method" id="method-sec">
+  <div class="wrap">
+    <h2>How we know what we know</h2>
+    <p class="lede" id="methodSummary"></p>
+
+    <div class="method-list" id="methodTable"></div>
+
+    <p class="method-repro">Nothing in this table is written by hand. It is generated from the same data the charts are drawn from, so the page cannot describe its sourcing differently from the way it actually works. The full dataset behind every figure can be downloaded below, and the tools that would turn the modeled rows into measured ones are published alongside it.</p>
+  </div>
+</section>
+
+<section class="sources" id="sources-sec">
+  <div class="wrap">
+    <div class="data-hub-head">
+      <div>
+        <h2>Sources</h2>
+        <p class="lede">Every figure presented as a fact on this page traces to one of the studies below. Take the data and check it.</p>
+      </div>
+      <div class="data-hub-actions">
+        <button class="data-hub-btn" id="toggleDataTableBtn" aria-expanded="false">View the full data table</button>
+        <button class="data-hub-btn" id="copyRawDataBtn">Copy as JSON</button>
+        <button class="data-hub-btn" id="downloadRawDataBtn">Download the dataset</button>
+      </div>
+    </div>
+
+    <div id="rawDataTableWrap" hidden></div>
+
+    <ol class="sources-list" id="sourcesList"></ol>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <div class="foot-main">
+      <b>Seven Kilometers an Hour</b>
+      <small>A data story from Advanced AI Lab Data Studio. Four published studies, one car-following model, and a ledger saying which is which — on a city whose traffic now moves at walking pace.</small>
+    </div>
+
+    <div class="foot-credits">
+      <h3 class="colophon-head">Credits</h3>
+      <dl>
+        <dt>Reporting and data</dt><dd>Advanced AI Lab Data Studio</dd>
+        <dt>Design and code</dt><dd>Advanced AI Lab Data Studio</dd>
+        <dt>Method</dt><dd><a href="#method-sec">How we know what we know</a></dd>
+        <dt>Citations</dt><dd><a href="#sources-sec">Full source list</a></dd>
+      </dl>
+    </div>
+
+    <div class="foot-col" id="colophonSources"></div>
+    <div class="foot-col" id="colophonBuilt"></div>
+  </div>
+
+  <p class="foot-note">Figures carrying a source chip are cited. The hourly profile, the corridor map, the corridor speeds fed to the simulation, and the per-corridor hours are modeled rather than observed, and are marked as such in the methodology. Do not cite them as measurements.</p>
+</footer>
+
+</body>
+</html>

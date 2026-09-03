@@ -1,0 +1,64 @@
+/* =====================================================================
+   DESIGN TOKENS & COLOR SYSTEM
+   Advanced AI Lab Data Studio — Visual Design System
+   ===================================================================== */
+:root {
+  /* Core Ground & Accent Tokens */
+  --cream: #F8F3EA;
+  --cream-alt: #EFE7DA;
+  --ink: #20130E;
+  --ink-light: #5A4740;
+  --ink-muted: #8E7A72;
+  --plum: #3A0F1D;
+  --crimson: #C42348;
+  --pink: #E8548C;
+  --marigold: #F2A310;
+  --teal: #0D6A6C;
+  /* Metro line. Not on the congestion ramp: hue 301, clear of the ramp's 27-170,
+     and 15.7:1 on cream where the neon cyan it replaces managed 1.4:1. */
+  --metro: var(--indigo);
+  --sky: #4FB3C4;
+  --indigo: #161440;
+  --night-dark: #07171A;
+  
+  /* Typography */
+  --display: 'Fraunces', Georgia, serif;
+  --sans: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Type scale. One ratio, eight steps, used everywhere. A section does not
+     get to invent its own heading size — that is what made the page read as
+     assembled rather than designed. */
+  --t-xs:   clamp(0.72rem, 0.70rem + 0.10vw, 0.78rem);
+  --t-sm:   clamp(0.84rem, 0.81rem + 0.15vw, 0.94rem);
+  --t-base: clamp(1.00rem, 0.97rem + 0.16vw, 1.09rem);
+  --t-md:   clamp(1.15rem, 1.05rem + 0.50vw, 1.45rem);
+  --t-lg:   clamp(1.35rem, 1.15rem + 1.00vw, 2.00rem);
+  --t-xl:   clamp(2.00rem, 1.40rem + 3.00vw, 3.60rem);
+  --t-2xl:  clamp(2.60rem, 1.60rem + 5.00vw, 5.00rem);
+  --t-3xl:  clamp(3.20rem, 1.60rem + 6.60vw, 8.00rem);
+
+  /* Spacing scale. Vertical rhythm comes from these and nothing else. */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --s8: 4.5rem;
+  --section-y: clamp(4.5rem, 13vh, 9.5rem);
+  --gutter: 6vw;
+
+  /* Measure. Body text does not run wider than this. */
+  --measure: 62ch;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.22);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+}
