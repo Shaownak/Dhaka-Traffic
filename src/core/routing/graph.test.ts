@@ -8,7 +8,7 @@ import {
   placeName,
   roadSpeed,
   routeOptions,
-} from './trip-model';
+} from './graph';
 
 const road = (a: string, b: string) =>
   ROADS.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a))!;

@@ -1,0 +1,534 @@
+/* =====================================================================
+   PLAN A TRIP — an application surface, not another chapter
+
+   Everything else on this page is an article: one column, wide measure, big
+   serif headings, content flowing downward. The planner is a TOOL, and reading
+   as an article was the problem — it looked like something to scroll past
+   rather than something to use.
+
+   So it gets its own shell: a bounded card with a dark control bar, results and
+   map side by side, denser sans-serif type, and controls that look pressable.
+   The display serif survives in exactly one place — the journey time — because
+   that is the answer, and it should carry the weight of one.
+
+   No new tokens. The shift is entirely in arrangement, density and hierarchy.
+   ===================================================================== */
+
+.trip { background: var(--cream-alt); color: var(--ink); }
+.trip .lede { color: var(--ink-light); }
+
+/* ---------- the shell ---------- */
+
+.planner {
+  margin-top: var(--s7);
+  background: var(--cream);
+  border: 1px solid rgba(32, 19, 14, .14);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* ---------- the control bar ----------
+   Dark, so the shell reads as chrome the moment it comes into view. */
+
+.planner-head {
+  background: var(--ink);
+  color: var(--cream);
+  padding: var(--s5) var(--s5) var(--s5);
+}
+
+.planner-tabs {
+  display: flex;
+  gap: var(--s1);
+  margin-bottom: var(--s5);
+  background: rgba(248, 243, 234, .08);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  width: fit-content;
+}
+.planner-tab {
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: rgba(248, 243, 234, .62);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: .4rem 1.15rem;
+  cursor: pointer;
+}
+.planner-tab:hover { color: var(--cream); }
+.planner-tab:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+.planner-tab.is-on { background: var(--cream); color: var(--ink); }
+
+/* rows of controls */
+.pf-route,
+.pf-when {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.pf-route { margin-bottom: var(--s4); }
+.pf-when { margin-bottom: var(--s4); }
+.pf-grow { flex: 1 1 11rem; min-width: 0; }
+
+.pf-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pf-field label {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(248, 243, 234, .55);
+}
+
+/* One control style, used by every input in the bar. */
+.planner-head select,
+.planner-head input[type="date"],
+.planner-head input[type="time"],
+.planner-head input[type="text"] {
+  font-family: var(--sans);
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--cream);
+  background: rgba(248, 243, 234, .10);
+  border: 1.5px solid rgba(248, 243, 234, .22);
+  border-radius: var(--radius-sm);
+  padding: .6rem .7rem;
+  width: 100%;
+  min-width: 0;
+  /* the native dark-on-light dropdown arrow is invisible on this ground */
+  color-scheme: dark;
+}
+.planner-head select:hover,
+.planner-head input:hover { border-color: rgba(248, 243, 234, .4); }
+.planner-head select:focus-visible,
+.planner-head input:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.planner-head select:disabled,
+.planner-head input:disabled { opacity: .4; cursor: not-allowed; }
+
+.pf-swap {
+  flex: 0 0 auto;
+  width: 2.6rem; height: 2.6rem;
+  display: grid; place-items: center;
+  font-size: 1.1rem;
+  color: var(--cream);
+  background: rgba(248, 243, 234, .10);
+  border: 1.5px solid rgba(248, 243, 234, .22);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.pf-swap:hover { background: rgba(248, 243, 234, .2); }
+.pf-swap:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+
+/* optional constraints, as inline chips rather than a checklist */
+.pf-options { display: flex; gap: var(--s3); flex-wrap: wrap; }
+.pf-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: rgba(248, 243, 234, .82);
+  background: rgba(248, 243, 234, .06);
+  border: 1px solid rgba(248, 243, 234, .16);
+  border-radius: var(--radius-pill);
+  padding: .4rem .9rem .4rem .7rem;
+  cursor: pointer;
+}
+.pf-toggle:hover { background: rgba(248, 243, 234, .12); }
+.pf-toggle:focus-within { outline: 2px solid var(--marigold); outline-offset: 2px; }
+.pf-toggle input[type="checkbox"] { accent-color: var(--marigold); width: 1rem; height: 1rem; }
+.pf-toggle select,
+.pf-toggle input[type="time"] {
+  width: auto;
+  padding: .25rem .45rem;
+  font-size: var(--t-sm);
+  background: rgba(248, 243, 234, .1);
+}
+
+/* the sentence box */
+.pf-search { display: flex; gap: var(--s3); }
+.pf-search-input { flex: 1 1 auto; }
+.planner-head .pf-search-input::placeholder { color: rgba(248, 243, 234, .45); }
+.pf-go {
+  flex: 0 0 auto;
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--cream);
+  background: var(--crimson);
+  border: 1.5px solid var(--crimson);
+  border-radius: var(--radius-sm);
+  padding: .6rem 1.5rem;
+  cursor: pointer;
+}
+.pf-go:hover { background: #A81C3C; border-color: #A81C3C; }
+.pf-go:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+
+/* what the parser understood — shown so nothing is silently assumed */
+.pf-read {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: rgba(248, 243, 234, .62);
+}
+.pf-read-bad { color: #FF9DB2; font-weight: 600; }
+
+/* ---------- body: results beside the map ---------- */
+
+.planner-body {
+  display: grid;
+  gap: var(--s6);
+  padding: var(--s6) var(--s5);
+}
+
+/*
+ * The map is the constrained element and gets the larger share.
+ *
+ * It was the other way round, and the map was unreadable: at 426 px against a
+ * 900-unit viewBox everything drew at 47% scale, so a 15px label rendered at
+ * seven. Text does not have that problem — it reflows into whatever column it
+ * is given — so the schematic wins the argument about width.
+ */
+.planner-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: start;
+}
+
+.planner-detail { display: grid; gap: var(--s6); min-width: 0; }
+
+/* the answer, given the weight of an answer */
+.result-card {
+  background: var(--cream-alt);
+  border: 1px solid rgba(32, 19, 14, .12);
+  border-left: 4px solid var(--crimson);
+  border-radius: var(--radius-md);
+  padding: var(--s5);
+}
+.result-eyebrow {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: var(--s3);
+}
+.result-headline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin: 0;
+}
+.trip-when {
+  font-family: var(--sans);
+  font-size: var(--t-base);
+  font-weight: 700;
+  color: var(--ink-light);
+  order: 2;
+}
+/* the one place the display serif survives: this is the answer */
+.trip-dur {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: var(--t-lg);
+  letter-spacing: -.028em;
+  line-height: 1;
+  color: var(--ink);
+  order: 1;
+}
+.result-detail {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-sm);
+  line-height: 1.6;
+  color: var(--ink-light);
+}
+
+.result-chips { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s4); }
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  background: var(--cream);
+  border: 1px solid rgba(32, 19, 14, .16);
+  border-radius: var(--radius-pill);
+  padding: .3rem .7rem;
+  color: var(--ink);
+}
+.chip em {
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.chip-heavy, .chip-high { color: #C9541F; }
+.chip-severe, .chip-low { color: var(--crimson); }
+.chip-free, .chip-light { color: var(--teal); }
+
+.result-block { min-width: 0; }
+.result-title {
+  font-family: var(--sans);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin: 0 0 var(--s4);
+}
+
+/* the deterministic explanation */
+.result-why {
+  margin: 0;
+  padding: var(--s4) var(--s5);
+  background: rgba(242, 163, 16, .10);
+  border-left: 3px solid var(--marigold);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--t-sm);
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* ---------- the journey as a sequence of moments ---------- */
+
+.trip-timeline {
+  display: grid;
+  gap: 0;
+  border-left: 2px solid rgba(32, 19, 14, .16);
+  padding-left: var(--s5);
+}
+.tl-step { position: relative; padding: var(--s3) 0; display: grid; gap: 2px; }
+.tl-step::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--s5) - 6px);
+  top: 1.05rem;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 2px solid var(--ink-muted);
+}
+.tl-start::before, .tl-end::before { background: var(--ink); border-color: var(--ink); }
+.tl-stop::before { background: var(--marigold); border-color: #8A4B08; }
+.tl-time { font-family: var(--sans); font-weight: 700; font-size: var(--t-sm); color: var(--ink); }
+.tl-title { font-size: var(--t-sm); font-weight: 600; color: var(--ink); }
+.tl-detail { font-size: var(--t-xs); color: var(--ink-muted); line-height: 1.5; }
+
+/* ---------- when to leave ---------- */
+
+.depart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--s3);
+}
+.depart-cell {
+  display: grid; gap: 2px;
+  padding: var(--s4);
+  background: var(--cream-alt);
+  border: 1px solid rgba(32, 19, 14, .12);
+  border-radius: var(--radius-sm);
+}
+.depart-best { border-color: var(--crimson); border-width: 2px; background: var(--cream); }
+.depart-label {
+  font-size: var(--t-xs); font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-muted);
+}
+.depart-value { font-family: var(--sans); font-weight: 700; font-size: var(--t-md); color: var(--ink); }
+.depart-best .depart-value { color: var(--crimson); }
+.depart-note { font-size: var(--t-xs); color: var(--ink-muted); line-height: 1.45; }
+
+/* ---------- departure curve ---------- */
+
+.trip-curve { display: flex; align-items: stretch; gap: var(--s2); height: 160px; }
+
+/*
+ * Three rows: label, bar track, hour. The bar's percentage height MUST resolve
+ * against a track of definite size, which is what the 1fr row gives it.
+ *
+ * This was a flex column before, and it silently broke the chart: the bars are
+ * flex items, so they shrank to fit alongside the two labels and every one of
+ * them rendered at the same 93px however tall its inline style said it was. A
+ * 74-minute journey and a 103-minute journey drew identical bars. A chart that
+ * flattens the differences it exists to show is worse than no chart.
+ */
+.curve-col {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 6px;
+}
+.curve-val { font-size: var(--t-xs); font-weight: 700; color: var(--ink-muted); }
+.curve-bar {
+  width: 100%;
+  align-self: end;
+  background: rgba(32, 19, 14, .22);
+  border-radius: 3px 3px 0 0;
+  min-height: 3px;
+}
+.curve-hour { font-size: var(--t-xs); color: var(--ink-muted); }
+.curve-best .curve-bar { background: var(--crimson); }
+.curve-best .curve-val, .curve-best .curve-hour { color: var(--crimson); font-weight: 700; }
+
+/* ---------- option cards ---------- */
+
+.trip-routes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+
+.trip-route {
+  padding: var(--s4);
+  background: var(--cream);
+  border: 1px solid rgba(32, 19, 14, .14);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.trip-route:hover { border-color: rgba(32, 19, 14, .38); box-shadow: var(--shadow-sm); }
+.trip-route:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+.trip-route-best {
+  border-color: var(--crimson);
+  border-width: 2px;
+  padding: calc(var(--s4) - 1px);
+  background: var(--cream);
+  box-shadow: var(--shadow-sm);
+}
+
+.trip-route-head { display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap; }
+.trip-route-time {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: var(--t-md);
+  color: var(--ink);
+}
+.trip-route-tag {
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-muted);
+  background: rgba(32, 19, 14, .07);
+  border-radius: var(--radius-pill);
+  padding: .18rem .6rem;
+}
+.trip-route-best .trip-route-tag { color: var(--crimson); background: rgba(196, 35, 72, .1); }
+.trip-score {
+  margin-left: auto;
+  font-family: var(--sans); font-weight: 700;
+  font-size: var(--t-sm); color: var(--ink-muted);
+}
+.trip-route-best .trip-score { color: var(--crimson); }
+
+.trip-route-via { margin-top: var(--s2); font-size: var(--t-sm); color: var(--ink); }
+.trip-route-range { margin-top: 2px; font-size: var(--t-xs); color: var(--ink-muted); }
+.trip-route-meta { margin-top: var(--s2); font-size: var(--t-xs); color: var(--ink-muted); line-height: 1.5; }
+
+.trip-route-stats { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s3); }
+.trip-stat { font-size: var(--t-sm); font-weight: 600; color: var(--ink); }
+.trip-stat-label {
+  display: block; font-style: normal;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted);
+}
+.tone-heavy, .tone-high { color: #C9541F; }
+.tone-severe { color: var(--crimson); }
+.tone-free, .tone-low { color: var(--teal); }
+.tone-conf-high { color: var(--teal); }
+.tone-conf-medium { color: #C9541F; }
+.tone-conf-low { color: var(--crimson); }
+
+/* a stop inside an option card */
+.trip-route-stop {
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s4);
+  background: rgba(242, 163, 16, .12);
+  border-left: 3px solid var(--marigold);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--t-sm);
+  color: var(--ink);
+}
+.trip-open {
+  margin-left: var(--s3);
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.trip-open-open { color: var(--teal); }
+.trip-open-closed { color: var(--crimson); }
+/* Unknown is the common case — about one place in six states hours — so it is
+   styled as ordinary information rather than as a warning. */
+.trip-open-unknown { color: var(--ink-muted); }
+
+/* ---------- the map ---------- */
+
+.planner-aside { position: sticky; top: var(--s5); display: grid; gap: var(--s4); min-width: 0; }
+
+.map-frame {
+  background: var(--cream-alt);
+  border: 1px solid rgba(32, 19, 14, .12);
+  border-radius: var(--radius-md);
+  padding: var(--s3);
+}
+.trip-map { width: 100%; height: auto; aspect-ratio: 470/400; display: block; }
+
+.map-legend { display: grid; gap: var(--s2); }
+.map-legend-title {
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted);
+}
+.map-legend-ramp { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.map-legend-ramp span { flex: 1; }
+.map-legend-scale {
+  display: flex; justify-content: space-between;
+  font-size: var(--t-xs); color: var(--ink-muted);
+}
+.map-legend-note { margin: var(--s1) 0 0; font-size: var(--t-xs); line-height: 1.5; color: var(--ink-muted); }
+
+/* ---------- foot ---------- */
+
+.planner-foot {
+  padding: var(--s4) var(--s5) var(--s5);
+  border-top: 1px solid rgba(32, 19, 14, .12);
+  background: var(--cream-alt);
+}
+.planner-note { margin: 0 0 var(--s2); font-size: var(--t-xs); line-height: 1.6; color: var(--ink-muted); }
+.planner-note:last-child { margin-bottom: 0; }
+.planner-note:empty { display: none; }
+
+.trip-note {
+  margin-top: var(--s5);
+  font-size: var(--t-sm);
+  line-height: 1.6;
+  color: var(--ink-muted);
+  max-width: var(--measure);
+}
+
+/* ---------- narrower ---------- */
+
+@media (max-width: 1080px) {
+  .planner-cols { grid-template-columns: minmax(0, 1fr); }
+  /* the map stops being a companion and becomes a section, so it should not
+     stick to the top of a column it no longer shares */
+  .planner-aside { position: static; }
+}
+
+@media (max-width: 860px) {
+  .planner { border-radius: var(--radius-md); }
+  .planner-head { padding: var(--s4); }
+  .planner-body { padding: var(--s5) var(--s4); gap: var(--s5); }
+  .planner-foot { padding: var(--s4); }
+  .pf-route, .pf-when { gap: var(--s2); }
+  .pf-when .pf-field { flex: 1 1 8rem; }
+  .pf-options { gap: var(--s2); }
+  .pf-toggle { width: 100%; }
+  .trip-timeline { padding-left: var(--s4); }
+  .tl-step::before { left: calc(-1 * var(--s4) - 6px); }
+  .trip-curve { height: 120px; gap: 4px; }
+}

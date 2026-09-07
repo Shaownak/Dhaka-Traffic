@@ -7,3 +7,11 @@ dist
 # (the collect workflow commits data/raw itself)
 src/data/measured/*
 !src/data/measured/network-times.json
+
+# collected OSM places are open data (ODbL) and are committed
+!src/data/measured/places.json
+
+# secrets
+.env
+.env.local
+

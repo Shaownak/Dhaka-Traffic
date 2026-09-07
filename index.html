@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="/src/styles/tokens.css">
 <link rel="stylesheet" href="/src/styles/base.css">
 <link rel="stylesheet" href="/src/styles/sections.css">
+<link rel="stylesheet" href="/src/styles/planner.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
@@ -294,41 +295,152 @@
     <h2>Plan a trip</h2>
     <p class="lede">Pick where you are going and when. The answer is not one number — it is the shape of the evening, and the difference between leaving at five and leaving at eight.</p>
 
-    <div class="trip-form">
-      <div class="trip-field">
-        <label for="tripFrom">From</label>
-        <select id="tripFrom"></select>
+    <!-- The planner is a tool, not another chapter. It gets its own surface:
+         a bounded shell with a control bar, results and map side by side, and
+         its own denser type. The article resumes below it. -->
+    <div class="planner">
+
+      <div class="planner-head">
+        <div class="planner-tabs" role="tablist" aria-label="How to describe your journey">
+          <button class="planner-tab is-on" id="tripModeForm" type="button" role="tab" aria-selected="true" aria-controls="tripFormPanel">Details</button>
+          <button class="planner-tab" id="tripModeText" type="button" role="tab" aria-selected="false" aria-controls="tripTextPanel">Sentence</button>
+        </div>
+
+        <div class="planner-panel" id="tripTextPanel" role="tabpanel" aria-labelledby="tripModeText" hidden>
+          <div class="pf-search">
+            <input type="text" id="tripText" class="pf-search-input"
+                   placeholder="Leave Gulshan at 5 PM, eat somewhere halfway, reach Mirpur by 7"
+                   autocomplete="off" spellcheck="false"
+                   aria-label="Describe your journey in a sentence">
+            <button class="pf-go" id="tripTextGo" type="button">Plan</button>
+          </div>
+          <p class="pf-read" id="tripRead" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="planner-panel" id="tripFormPanel" role="tabpanel" aria-labelledby="tripModeForm">
+          <div class="pf-route">
+            <div class="pf-field pf-grow">
+              <label for="tripFrom">From</label>
+              <select id="tripFrom"></select>
+            </div>
+            <button class="pf-swap" id="tripSwap" type="button" aria-label="Swap origin and destination">&#8646;</button>
+            <div class="pf-field pf-grow">
+              <label for="tripTo">To</label>
+              <select id="tripTo"></select>
+            </div>
+          </div>
+
+          <div class="pf-when">
+            <div class="pf-field">
+              <label for="tripDate">Date</label>
+              <input type="date" id="tripDate">
+            </div>
+            <div class="pf-field">
+              <label for="tripTime">Leave at</label>
+              <input type="time" id="tripTime" value="17:00">
+            </div>
+            <div class="pf-field pf-grow">
+              <label for="tripPreference">Optimize for</label>
+              <select id="tripPreference"></select>
+            </div>
+          </div>
+
+          <div class="pf-options">
+            <label class="pf-toggle">
+              <input type="checkbox" id="tripDeadlineOn">
+              <span>Arrive by</span>
+              <input type="time" id="tripDeadlineTime" value="19:00" disabled aria-label="Arrival deadline">
+            </label>
+
+            <label class="pf-toggle">
+              <input type="checkbox" id="tripStopOn">
+              <span>Stop for</span>
+              <select id="tripStopKind" disabled aria-label="What kind of stop">
+                <option value="restaurant,cafe,fast_food">anything to eat</option>
+                <option value="restaurant">a restaurant</option>
+                <option value="cafe">a cafe</option>
+                <option value="fast_food">something quick</option>
+              </select>
+              <select id="tripStopWhere" disabled aria-label="Where along the route">
+                <option value="0.5">halfway</option>
+                <option value="0.33">a third in</option>
+                <option value="0.7">nearer the end</option>
+              </select>
+              <select id="tripStopDwell" disabled aria-label="How long to stay">
+                <option value="30">30 min</option>
+                <option value="45" selected>45 min</option>
+                <option value="90">90 min</option>
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
-      <button class="trip-swap" id="tripSwap" type="button" aria-label="Swap origin and destination">&#8646;</button>
-      <div class="trip-field">
-        <label for="tripTo">To</label>
-        <select id="tripTo"></select>
+
+      <div class="planner-body" id="tripAnswer">
+
+        <!-- The answer spans the full width: it is what the reader came for,
+             and boxing it into a column made it compete with the map. -->
+        <div class="result-card">
+          <span class="result-eyebrow" id="tripEyebrow">Recommended journey</span>
+          <p class="result-headline" id="tripHeadline" role="status" aria-live="polite"></p>
+          <p class="result-detail" id="tripDetail"></p>
+          <div class="result-chips" id="tripChips"></div>
+        </div>
+
+        <!-- Map first, and wider than the detail beside it. It is the only
+             thing here that needs room to be readable at all; text reflows to
+             whatever width it is given, a schematic does not. -->
+        <div class="planner-cols">
+          <aside class="planner-aside">
+            <div class="map-frame">
+              <svg class="trip-map" id="tripMap" role="img" aria-label="Route map"></svg>
+            </div>
+            <div class="map-legend" aria-hidden="true">
+              <span class="map-legend-title">Speed on the chosen route</span>
+              <div class="map-legend-ramp">
+                <span style="background:#B4172F"></span>
+                <span style="background:#E0662A"></span>
+                <span style="background:#F2A310"></span>
+                <span style="background:#7FBF4A"></span>
+                <span style="background:#3FA88A"></span>
+              </div>
+              <div class="map-legend-scale"><span>4 km/h</span><span>25 km/h</span></div>
+              <p class="map-legend-note"><b>Dashed</b> lines are the alternatives. A ringed junction is where a stop is reached.</p>
+            </div>
+          </aside>
+
+          <div class="planner-detail">
+            <div class="result-block">
+              <h3 class="result-title">Your journey</h3>
+              <div class="trip-timeline" id="tripTimeline"></div>
+            </div>
+
+            <p class="result-why" id="tripWhy"></p>
+
+            <div class="result-block" id="tripDepart" hidden></div>
+
+            <div class="result-block">
+              <h3 class="result-title" id="tripCurveTitle">If you leave at</h3>
+              <div class="trip-curve" id="tripCurve"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options run full width so a card can hold its stop, its stats and
+             its reasoning on one line each instead of wrapping in a column. -->
+        <div class="result-block">
+          <h3 class="result-title">Your options</h3>
+          <ol class="trip-routes" id="tripRoutes"></ol>
+        </div>
       </div>
-      <div class="trip-field">
-        <label for="tripDate">Date</label>
-        <input type="date" id="tripDate">
-      </div>
-      <div class="trip-field">
-        <label for="tripWindow">When</label>
-        <select id="tripWindow"></select>
+
+      <div class="planner-foot">
+        <p class="planner-note" id="tripProvenance"></p>
+        <p class="planner-note" id="tripNotices"></p>
       </div>
     </div>
 
-    <div class="trip-answer">
-      <p class="trip-headline" id="tripHeadline" role="status" aria-live="polite"></p>
-      <p class="trip-detail" id="tripDetail"></p>
-
-      <h3 class="trip-sub">If you leave at</h3>
-      <div class="trip-curve" id="tripCurve"></div>
-
-      <h3 class="trip-sub">Your options</h3>
-      <ol class="trip-routes" id="tripRoutes"></ol>
-    </div>
-
-    <svg class="trip-map" id="tripMap" role="img" aria-label="Route map"></svg>
-
-    <p class="trip-note" id="tripProvenance"></p>
-    <p class="trip-note">Journey times are estimates, not a forecast of one particular day. A date two days out can only tell you what a typical working day or weekend looks like — nobody can know that evening's incidents in advance. Road speeds here are modeled; the collector that would replace them with measured times is published with the project.</p>
+    <p class="trip-note">Journey times are estimates, not a forecast of one particular day. A date two days out can only tell you what a typical working day or weekend looks like — nobody can know that evening's incidents in advance. Road speeds here are modeled; the collector that would replace them with measured times is published with the project. Places to stop come from OpenStreetMap contributors, which carries no ratings and states opening hours for only about one place in six.</p>
   </div>
 </section>
 

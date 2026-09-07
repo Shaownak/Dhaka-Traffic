@@ -7,6 +7,9 @@ rem    start.bat build      build the production site into dist\
 rem    start.bat preview    serve the built site
 rem    start.bat test       run the unit tests
 rem    start.bat check      typecheck, test and build in one go
+rem    start.bat api        start the journey API on port 8787
+rem    start.bat journey    plan a journey from the command line
+rem    start.bat audit      report gaps in the routable network
 rem
 rem  Safe to double-click. Installs dependencies on first run.
 rem ============================================================
@@ -43,14 +46,33 @@ if /i "%TASK%"=="build"   goto :build
 if /i "%TASK%"=="preview" goto :preview
 if /i "%TASK%"=="test"    goto :test
 if /i "%TASK%"=="check"   goto :check
+if /i "%TASK%"=="api"     goto :api
+if /i "%TASK%"=="journey" goto :journey
+if /i "%TASK%"=="audit"   goto :audit
 
 echo Unknown command "%TASK%".
-echo Use: start.bat [dev^|build^|preview^|test^|check]
+echo Use: start.bat [dev^|build^|preview^|test^|check^|api^|journey^|audit]
 exit /b 1
 
 :dev
 echo Starting the dev server. Press Ctrl+C to stop.
 call npm run dev -- --open
+goto :done
+
+:api
+echo Starting the journey API on http://localhost:8787. Press Ctrl+C to stop.
+call npm run api
+goto :done
+
+:journey
+rem Everything after the command word is passed through to the planner, so
+rem    start.bat journey --from gulshan --to mirpur --at 17:00 --stop any
+call npm run journey -- %2 %3 %4 %5 %6 %7 %8 %9
+goto :done
+
+:audit
+call npm run audit:network
+if errorlevel 1 goto :failed
 goto :done
 
 :build

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // The server needs Node's globals; the browser code deliberately does not,
+    // which is why this is a separate project rather than a wider `types` array
+    // on the root config. Adding "node" there would let a section file reach for
+    // `process` or `fs` and still typecheck.
+    "types": ["node"],
+    "lib": ["ES2022"]
+  },
+  // Only the server is listed. The core modules it imports are pulled in and
+  // checked along the way, and because none of them touch the DOM they check
+  // cleanly without the DOM lib — which is itself a useful guarantee: if a core
+  // module ever reaches for `document`, this project stops compiling.
+  "include": ["../server"]
+}

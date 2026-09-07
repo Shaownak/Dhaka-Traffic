@@ -20,11 +20,27 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = join(ROOT, 'data', 'raw', 'network-times.ndjson');
 const OUT = join(ROOT, 'src', 'data', 'measured', 'network-times.json');
 
-const median = (xs) => {
+const median = (xs) => quantile(xs, 0.5);
+
+/**
+ * Linear-interpolated quantile.
+ *
+ * The planner needs p10 and p90 as well as the median: a road's spread is what
+ * turns a point estimate into an honest range, and the confidence model reads
+ * the sample count to decide how much to trust the spread at all.
+ */
+const quantile = (xs, q) => {
   const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  if (!s.length) return null;
+  if (s.length === 1) return s[0];
+  const pos = (s.length - 1) * q;
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (pos - lo);
 };
+
+/** Enough observations in a cell for a p10/p90 to mean anything. */
+const MIN_FOR_SPREAD = 5;
 
 async function main() {
   let text;
@@ -45,13 +61,19 @@ async function main() {
   // road -> dayType -> hour -> [minutes]
   const bucket = new Map();
   for (const r of good) {
-    if (!bucket.has(r.road)) bucket.set(r.road, { working: {}, weekend: {}, free: [], km: [] });
+    if (!bucket.has(r.road)) {
+      bucket.set(r.road, { working: {}, weekend: {}, free: [], km: [], lastAt: null });
+    }
     const entry = bucket.get(r.road);
     const day = entry[r.dayType];
     if (!day) continue;
     (day[r.localHour] ??= []).push(r.minutes);
     if (typeof r.freeMinutes === 'number') entry.free.push(r.freeMinutes);
     if (typeof r.meters === 'number') entry.km.push(r.meters / 1000);
+    // Recency is per road: the confidence model ages a route by its oldest leg.
+    if (r.collectedAt && (!entry.lastAt || r.collectedAt > entry.lastAt)) {
+      entry.lastAt = r.collectedAt;
+    }
   }
 
   const roads = {};
@@ -65,6 +87,29 @@ async function main() {
       }
       return out;
     };
+    // Per-cell statistics, so the planner can report a measured spread and the
+    // confidence model can see how thin the evidence is.
+    const stats = (day) => {
+      const out = [];
+      for (let h = 0; h < 24; h++) {
+        const cell = day[h];
+        if (!cell?.length) {
+          out.push(null);
+          continue;
+        }
+        out.push({
+          n: cell.length,
+          p50: +quantile(cell, 0.5).toFixed(2),
+          // With too few samples a p10/p90 is just the min and max wearing a
+          // percentile's name, so fall back to the median rather than publish
+          // a spread the data cannot support.
+          p10: +quantile(cell, cell.length >= MIN_FOR_SPREAD ? 0.1 : 0.5).toFixed(2),
+          p90: +quantile(cell, cell.length >= MIN_FOR_SPREAD ? 0.9 : 0.5).toFixed(2),
+        });
+      }
+      return out;
+    };
+
     const working = hourly(entry.working);
     const weekend = hourly(entry.weekend);
     const full = working.every((v) => v !== null) && weekend.every((v) => v !== null);
@@ -75,6 +120,8 @@ async function main() {
       freeMinutes: entry.free.length ? +median(entry.free).toFixed(2) : null,
       working,
       weekend,
+      stats: { working: stats(entry.working), weekend: stats(entry.weekend) },
+      lastObservedAt: entry.lastAt ?? null,
     };
   }
 
