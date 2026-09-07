@@ -96,7 +96,7 @@ Open-Meteo and Overpass need no key.
 npm test
 ```
 
-171 tests. The ones that matter most are in
+192 tests. The ones that matter most are in
 `src/core/journey/planner.test.ts`: they run the whole orchestrator against the
 real network and the real places dataset, and check the answers a traveller would
 read — including the full acceptance scenario (Gulshan → Mirpur, 5 PM, restaurant

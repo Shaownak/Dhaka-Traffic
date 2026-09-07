@@ -137,7 +137,7 @@ stop-start waves. The queues are emergent.
 npm test
 ```
 
-171 tests. The acceptance tests in `src/core/journey/planner.test.ts` run the
+192 tests. The acceptance tests in `src/core/journey/planner.test.ts` run the
 whole orchestrator against the real network and the real places dataset,
 including the full scenario: Gulshan → Mirpur, 5 PM, restaurant halfway,
 deterministic down to which restaurant.
