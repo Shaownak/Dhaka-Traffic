@@ -37,7 +37,7 @@ jobs:
       - name: Sample corridor speeds
         env:
           GOOGLE_ROUTES_KEY: ${{ secrets.GOOGLE_ROUTES_KEY }}
-        run: node scripts/collect-corridor-speeds.mjs
+        run: node scripts/collect/corridor-speeds.mjs
 
       - name: Sample air quality
         # Optional: the job stays green if no OpenAQ key is configured.
@@ -45,7 +45,7 @@ jobs:
           OPENAQ_KEY: ${{ secrets.OPENAQ_KEY }}
         run: |
           if [ -n "$OPENAQ_KEY" ]; then
-            node scripts/collect-air-quality.mjs
+            node scripts/collect/air-quality.mjs
           else
             echo "OPENAQ_KEY not set, skipping air quality"
           fi

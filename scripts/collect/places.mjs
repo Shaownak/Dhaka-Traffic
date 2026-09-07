@@ -2,7 +2,7 @@
 /**
  * COLLECT PLACES — restaurants and cafes from OpenStreetMap, via Overpass.
  *
- *   node scripts/collect-places.mjs [--dry-run]
+ *   node scripts/collect/places.mjs [--dry-run]
  *
  * Why OSM and not a commercial places API: the data is openly licensed (ODbL),
  * so it can be committed to the repository, cited, and fact-checked. A
@@ -132,7 +132,7 @@ async function main() {
   for (const p of deduped) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
 
   const payload = {
-    note: 'Collected from OpenStreetMap via Overpass by scripts/collect-places.mjs. '
+    note: 'Collected from OpenStreetMap via Overpass by scripts/collect/places.mjs. '
       + 'Positions and names are as OSM states them. OSM carries no ratings and no '
       + 'live availability, so this file has none; anything the optimizer reports '
       + 'about quality or opening comes from a tag actually present here.',

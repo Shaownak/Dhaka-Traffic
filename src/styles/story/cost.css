@@ -1,0 +1,58 @@
+/* ---------- 6. cost & personal commute calculator ---------- */
+.cost { background: var(--crimson); color: var(--cream); }
+.cost h2 { color: var(--cream); }
+.cost .lede { color: #F8D9DF; }
+
+.cost-tabs { display: flex; gap: .6rem; margin: 2.8rem 0 1.6rem; flex-wrap: wrap; }
+.cost-tab { --btn-accent: var(--cream); --btn-ink: var(--crimson); }
+
+.picker { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1.6rem 0 2.5rem; }
+.picker button { --btn-accent: var(--cream); --btn-ink: var(--crimson); }
+
+/* Custom calculator panel */
+.calc-panel {
+  background: rgba(34, 8, 17, 0.42);
+  border: 1px solid rgba(248,243,234,.22); border-radius: var(--radius-md);
+  padding: 2rem; margin: 1.6rem 0 2.5rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+}
+.calc-field label { display: block; font-size: .8rem; font-weight: 700; letter-spacing: .12em; color: #F8D9DF; margin-bottom: .65rem; text-transform: uppercase; }
+.calc-val { font-family: var(--display); font-weight: 900; font-size: 1.5rem; color: var(--marigold); margin-top: .4rem; }
+.calc-field select, .calc-field input[type=number] {
+  width: 100%; padding: .6rem .85rem; font-family: var(--sans); font-size: .95rem; font-weight: 600;
+  border-radius: var(--radius-sm); border: 1.5px solid rgba(248,243,234,.35); background: #3A0F1D; color: var(--cream);
+}
+.calc-field select:focus, .calc-field input[type=number]:focus { outline: 2px solid var(--marigold); border-color: transparent; }
+
+.cost-grid { display: grid; grid-template-columns: minmax(280px, 1fr) 1.5fr; gap: 5vw; align-items: center; }
+.bignum {
+  font-family: var(--display); font-weight: 900; font-size: clamp(5.8rem, 15vw, 12rem); line-height: .82;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.35);
+}
+.bigunit { font-family: var(--display); font-weight: 400; font-size: clamp(1.3rem, 2.6vw, 2rem); margin-top: .4rem; }
+.bigsub { font-size: .96rem; color: #F8D9DF; margin-top: 1.4rem; max-width: 32ch; line-height: 1.55; }
+.year-svg { width: 100%; height: auto; aspect-ratio: 1000/612; display: block; }
+.year-cap { font-size: .86rem; color: #F8D9DF; margin-top: 1.1rem; }
+
+/* Opportunity Equivalents */
+.equiv-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.4rem;
+  margin-top: 2.5rem; padding-top: 2rem; border-top: 1px dashed rgba(248,243,234,.35);
+}
+.equiv-item {
+  background: rgba(0,0,0,0.18); border: 1px solid rgba(248,243,234,0.15); border-radius: var(--radius-md);
+  padding: 1.4rem; display: flex; flex-direction: column; gap: .4rem;
+}
+.equiv-num { font-family: var(--display); font-weight: 900; font-size: 2rem; color: var(--marigold); line-height: 1; }
+.equiv-lab { font-size: .88rem; color: #F8D9DF; line-height: 1.4; }
+
+.copy-stat-btn {
+  margin-top: 1.8rem; background: var(--marigold); color: var(--ink); font-family: var(--sans);
+  font-weight: 700; font-size: .92rem; border: none; border-radius: var(--radius-pill); padding: .7rem 1.5rem;
+  cursor: pointer; transition: all .18s ease; display: inline-flex; align-items: center; gap: .5rem;
+  box-shadow: var(--shadow-md);
+}
+.copy-stat-btn:hover { background: #FFB833; }
+.copy-stat-btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+

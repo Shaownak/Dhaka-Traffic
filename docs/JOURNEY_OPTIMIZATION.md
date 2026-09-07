@@ -18,7 +18,7 @@ worked on short trips and quietly failed on long ones: the deepest journey in th
 network is eight hops, so an *alternative* to it needs nine or ten, and the cap
 excluded exactly the journeys where a reader most wants a choice.
 
-`scripts/network-audit.mjs` measured it: **9 of 378 place pairs offered only one
+`scripts/dev/network-audit.mjs` measured it: **9 of 378 place pairs offered only one
 route**. After the change, **2 do** — and both of those are genuinely single
 roads (Uttara and Bashundhara are dead-end stubs with one connection each).
 

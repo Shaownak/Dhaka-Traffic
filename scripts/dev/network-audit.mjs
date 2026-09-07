@@ -9,12 +9,12 @@
  * route, pairs with only one route (where "alternatives" is a lie), trips that
  * hit the hop ceiling, and places barely connected to anything.
  */
-import { registerTsLoader } from './lib/ts-loader.mjs';
+import { registerTsLoader } from '../lib/ts-loader.mjs';
 
 registerTsLoader();
 
-const { PLACES, ROADS } = await import('../src/data/network.ts');
-const { fastestRoute, routeOptions } = await import('../src/core/routing/graph.ts');
+const { PLACES, ROADS } = await import('../../src/data/network.ts');
+const { fastestRoute, routeOptions } = await import('../../src/core/routing/graph.ts');
 
 const HOUR = 18;
 const DAY = 'working';

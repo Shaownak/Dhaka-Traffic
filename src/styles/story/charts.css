@@ -1,0 +1,42 @@
+/* ---------- 3. the record ---------- */
+.record { background: var(--teal); color: var(--cream); }
+.record h2 { color: var(--cream); }
+.record .lede { color: #C2EAE6; max-width: 54ch; }
+.history-svg { width: 100%; height: auto; aspect-ratio: 1000/450; display: block; margin-top: 3vh; }
+.history-svg .pt { cursor: pointer; transition: opacity .18s ease, transform .18s ease; }
+.history-svg .pt:focus { outline: none; }
+.history-svg .pt:focus-visible circle { stroke: var(--marigold); stroke-width: 4; }
+.history-svg.hot .pt { opacity: .35; }
+.history-svg.hot .pt.on { opacity: 1; }
+.readout {
+  font-size: 1.05rem; color: var(--cream); margin: 1.6rem 0 0; min-height: 1.8em;
+  background: rgba(7, 60, 61, 0.6); border-left: 4px solid var(--marigold);
+  padding: 0.8rem 1.2rem; border-radius: 0 8px 8px 0;
+}
+.record-note { font-size: .86rem; color: #A6D8D5; margin-top: 1.6rem; max-width: 58ch; }
+
+/* ---------- 4. clock ---------- */
+.clock { background: var(--indigo); color: var(--cream); }
+.clock h2 { max-width: 15ch; color: var(--cream); }
+.clock .lede { color: #C2C0EB; }
+.clock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5vw; align-items: center; margin-top: 2vh; }
+.clock-svg { width: 100%; max-width: 640px; height: auto; aspect-ratio: 4/3; display: block; margin: 0 auto; }
+.key { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: 2.6rem; font-size: .88rem; color: #C2C0EB; }
+.key span { display: flex; align-items: center; gap: .5rem; font-weight: 600; }
+.key i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.clock-hint { font-size: .84rem; color: #A8A4E0; margin-top: 1.2rem; font-weight: 500; }
+
+/* ---------- 5. map ---------- */
+.map { background: var(--cream); }
+.map-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.2rem; }
+.map h2 { }
+.map .lede { color: var(--ink-light); }
+.map-svg { width: 100%; height: auto; aspect-ratio: 900/640; display: block; margin-top: 3vh; }
+.map-svg .road { cursor: pointer; transition: opacity .2s ease; }
+.map-svg.hot .road { opacity: .25; }
+.map-svg.hot .road.on { opacity: 1; }
+.clock-svg .wedge { cursor: pointer; transition: opacity .18s ease; }
+.clock-svg.hot .wedge { opacity: .32; }
+.clock-svg.hot .wedge.on { opacity: 1; }
+.map-btn { --btn-accent: var(--teal); --btn-ink: var(--cream); }
+

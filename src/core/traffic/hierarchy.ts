@@ -16,7 +16,7 @@
    AS SHIPPED, ONLY baseline AND freeflow CAN ANSWER. There is no live traffic
    feed and no collected series, so nothing else is reachable. The tiers above
    are not aspirational scaffolding: the profile tier activates by itself the
-   moment scripts/build-network-times.mjs writes a non-empty file, with no code
+   moment scripts/build/network-times.mjs writes a non-empty file, with no code
    change. The observed and predicted tiers require infrastructure that does
    not exist, and they return null until it does rather than quietly falling
    back to something that looks similar.

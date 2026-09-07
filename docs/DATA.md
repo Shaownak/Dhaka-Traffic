@@ -127,12 +127,43 @@ applied** to any travel time. See `docs/TRAFFIC_MODEL.md` for why.
 
 ## Air quality
 
-`scripts/collect-air-quality.mjs` samples OpenAQ v3 for Dhaka's PM2.5 monitors.
+`scripts/collect/air-quality.mjs` samples OpenAQ v3 for Dhaka's PM2.5 monitors.
 
 One caution, repeated from the script: traffic is one source of Dhaka's PM2.5,
 not the dominant one. Brick kilns and construction dust are large and seasonal
 contributors. Correlating a speed series against a PM2.5 series will produce a
 number, and that number will not be causal.
+
+## Automation
+
+`.github/workflows/collect.yml` runs the collectors on a schedule and commits the
+samples. Keys live in repository secrets, never in the workflow file.
+
+To run it yourself instead, any always-on machine will do:
+
+```bash
+*/15 * * * * cd /path/to/project && GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs
+```
+
+GitHub's scheduler drifts, sometimes by ten minutes or more. That is tolerable
+here **only because every row is stamped with the time it was actually
+collected**, and the builder buckets by that stamp rather than by the intended
+slot. A late sample is still a valid sample. If you need tighter timing than
+that, use cron on a machine you control.
+
+### The corridor collector
+
+`scripts/collect/corridor-speeds.mjs` is the older, narrower of the two
+collectors: it samples a handful of named corridors rather than every road, and
+`scripts/build/corridor-speeds.mjs` aggregates those into
+`src/data/measured/hourly.json` for the story's hourly clock.
+
+It drops failed samples, drops Friday and Saturday, and requires at least five
+samples in an hour-of-day cell before reporting it. Pass `--include-weekends` to
+treat weekend traffic as its own question rather than excluding it.
+
+The network collector (`scripts/collect/network-times.mjs`) is the one the trip
+planner depends on. Run that one first if you only have budget for one.
 
 ## Rules
 

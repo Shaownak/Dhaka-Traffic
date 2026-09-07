@@ -2,7 +2,7 @@
    PLACES — somewhere to stop, from OpenStreetMap
 
    The dataset is real: 2,300-odd named, positioned eating places collected
-   from OSM by scripts/collect-places.mjs and committed under an open licence.
+   from OSM by scripts/collect/places.mjs and committed under an open licence.
 
    WHAT OSM DOES NOT CARRY, and what this module therefore refuses to invent:
 

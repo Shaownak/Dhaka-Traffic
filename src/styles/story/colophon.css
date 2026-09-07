@@ -1,0 +1,76 @@
+/* ---------- colophon ----------
+   Four columns: what this is, who made it, whose numbers, what it is built
+   from. The source column is rendered from SOURCES, so a new citation appears
+   here without anyone remembering to add it. */
+footer { background: var(--night-dark); color: #7C9C9C; padding: 7vh var(--gutter) 9vh; }
+.foot {
+  max-width: 1160px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: var(--s7) var(--s6);
+  align-items: start;
+}
+.foot b { display: block; font-family: var(--display); font-weight: 700; color: var(--cream); font-size: var(--t-lg); margin-bottom: var(--s3); }
+.foot-main small { font-size: var(--t-sm); line-height: 1.7; display: block; max-width: 40ch; }
+
+.colophon-head {
+  font-family: var(--sans); font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; color: rgba(248,243,234,.45);
+  margin: 0 0 var(--s4); padding-bottom: var(--s2);
+  border-bottom: 1px solid rgba(248,243,234,.16);
+}
+.colophon-list { list-style: none; margin: 0; padding: 0; }
+.colophon-list li { font-size: var(--t-sm); line-height: 1.5; color: #A9C4C4; margin-bottom: var(--s2); }
+
+.foot-credits dl { grid-template-columns: 1fr; gap: 0; margin: 0; }
+.foot-credits dt { font-size: var(--t-xs); color: rgba(248,243,234,.45); margin-top: var(--s3); }
+.foot-credits dt:first-child { margin-top: 0; }
+.foot-credits dd { font-size: var(--t-sm); color: #A9C4C4; }
+
+.foot-note {
+  max-width: 1160px; margin: var(--s8) auto 0; padding-top: var(--s5);
+  border-top: 1px solid rgba(248,243,234,.14);
+  font-size: var(--t-xs); line-height: 1.8; color: #6B8A8A; max-width: 90ch;
+}
+
+@media (max-width: 860px) {
+  .foot { grid-template-columns: 1fr 1fr; }
+  .foot-main { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+  .foot { grid-template-columns: 1fr; }
+}
+
+/* Responsive below 860px */
+@media (max-width: 860px) {
+  .jam-fade {
+    background: linear-gradient(to top,
+      rgba(18,10,7,.97) 0%, rgba(18,10,7,.94) 52%, rgba(18,10,7,.42) 78%, rgba(18,10,7,0) 100%);
+  }
+  .clock-grid, .cost-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .ctrls { grid-template-columns: 1fr; gap: 2.2rem; }
+  .stage { height: min(58svh, 500px); }
+  .hud-speed { font-size: .82rem; max-width: 78%; line-height: 1.35; }
+  .clock-svg { width: min(520px, 92vw); margin: 0 auto; }
+  section { padding: 11vh 7vw; }
+  .night { padding: 15vh 7vw; }
+  /* the cover follows the wider mobile gutter too, or its headline sits 3px
+     inside every heading below it */
+  .jam { padding: 0 7vw; }
+}
+
+/* Focus rings live with the button system above. */
+
+/* the cause, sitting under the record of the symptom */
+.record-why {
+  font-family: var(--display); font-weight: 700; font-size: var(--t-lg);
+  color: var(--cream); margin: var(--s8) 0 var(--s4);
+}
+.record-why-lede { color: #C2EAE6; max-width: 56ch; margin: 0 0 var(--s6); font-size: var(--t-base); line-height: 1.6; }
+.supply-svg { width: 100%; height: auto; display: block; max-width: 780px; }
+.record .srcline { color: #A6D8D5; }
+
+/* who the cost model leaves out — stated, not buried */
+.cost-caveat {
+  margin: var(--s8) 0 0; max-width: 64ch; font-size: var(--t-base); line-height: 1.65;
+  color: #F8D9DF; border-left: 3px solid rgba(248,243,234,.45); padding-left: var(--s5);
+}
+

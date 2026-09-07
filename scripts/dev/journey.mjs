@@ -9,12 +9,12 @@
  * Same orchestrator the page and the API use, so what it prints is what they
  * would answer. Handy for checking a change without a browser.
  */
-import { registerTsLoader } from './lib/ts-loader.mjs';
+import { registerTsLoader } from '../lib/ts-loader.mjs';
 
 registerTsLoader();
 
-const { planJourney } = await import('../src/core/journey/planner.ts');
-const { parseJourneyText } = await import('../src/core/nl/parse.ts');
+const { planJourney } = await import('../../src/core/journey/planner.ts');
+const { parseJourneyText } = await import('../../src/core/nl/parse.ts');
 
 /* ---------- arguments ---------- */
 const args = process.argv.slice(2);

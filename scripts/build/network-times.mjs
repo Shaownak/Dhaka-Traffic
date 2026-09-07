@@ -2,7 +2,7 @@
 /**
  * Turns collected samples into the table the trip planner reads.
  *
- *   node scripts/build-network-times.mjs
+ *   node scripts/build/network-times.mjs
  *
  * Writes src/data/measured/network-times.json — one entry per road, holding 24
  * hourly durations for a working day and 24 for a weekend. Where several
@@ -16,7 +16,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RAW = join(ROOT, 'data', 'raw', 'network-times.ndjson');
 const OUT = join(ROOT, 'src', 'data', 'measured', 'network-times.json');
 
@@ -47,7 +47,7 @@ async function main() {
   try {
     text = await readFile(RAW, 'utf8');
   } catch {
-    console.error(`No samples at ${RAW}. Run scripts/collect-network-times.mjs first.`);
+    console.error(`No samples at ${RAW}. Run scripts/collect/network-times.mjs first.`);
     process.exit(1);
   }
 

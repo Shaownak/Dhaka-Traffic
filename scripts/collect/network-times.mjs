@@ -9,9 +9,9 @@
  * from live conditions — which means the whole sweep runs in one sitting
  * instead of over four weeks.
  *
- *   GOOGLE_ROUTES_KEY=... node scripts/collect-network-times.mjs --dry-run
- *   GOOGLE_ROUTES_KEY=... node scripts/collect-network-times.mjs
- *   GOOGLE_ROUTES_KEY=... node scripts/collect-network-times.mjs --hours 6,9,13,18,21
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs --dry-run
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs --hours 6,9,13,18,21
  *
  * What this is and is not: Google's prediction of a typical Tuesday at 6 PM is
  * a real, dated, citable model output. It is not an observation of any actual
@@ -24,7 +24,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'data', 'raw', 'network-times.ndjson');
 const ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
@@ -177,7 +177,7 @@ async function main() {
   }
 
   console.log(`\n${done - failed} of ${total} succeeded, ${failed} failed -> ${OUT}`);
-  console.log('Next: node scripts/build-network-times.mjs');
+  console.log('Next: node scripts/build/network-times.mjs');
 }
 
 await main();

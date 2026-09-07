@@ -5,8 +5,8 @@
  * Samples OpenAQ v3 for Dhaka's PM2.5 monitors. Free, openly licensed, and
  * citable, which is why it is here rather than a commercial AQI feed.
  *
- *   OPENAQ_KEY=... node scripts/collect-air-quality.mjs --dry-run
- *   OPENAQ_KEY=... node scripts/collect-air-quality.mjs
+ *   OPENAQ_KEY=... node scripts/collect/air-quality.mjs --dry-run
+ *   OPENAQ_KEY=... node scripts/collect/air-quality.mjs
  *
  * Get a key at https://explore.openaq.org (free, instant).
  *
@@ -22,7 +22,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'data', 'raw', 'air-quality.ndjson');
 const API = 'https://api.openaq.org/v3';
 

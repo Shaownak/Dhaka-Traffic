@@ -137,7 +137,7 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
     const loaded = await osmPlaces.load();
     if (!loaded) {
       return fail(503, 'NO_PLACES_DATASET',
-        'No places dataset is available. Run scripts/collect-places.mjs to collect one.');
+        'No places dataset is available. Run scripts/collect/places.mjs to collect one.');
     }
     const found = osmPlaces.near({ lat, lon }, radiusKm, kinds).slice(0, 50);
     return ok({ count: found.length, attribution: osmPlaces.attribution, places: found });

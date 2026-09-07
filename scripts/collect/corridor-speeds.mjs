@@ -8,11 +8,11 @@
  * Run it every 15 minutes for four weeks and the hourly clock, the corridor
  * map, and the simulation inputs all stop being invented.
  *
- *   GOOGLE_ROUTES_KEY=... node scripts/collect-corridor-speeds.mjs
- *   GOOGLE_ROUTES_KEY=... node scripts/collect-corridor-speeds.mjs --dry-run
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/corridor-speeds.mjs
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/corridor-speeds.mjs --dry-run
  *
  * Cron, every 15 minutes:
- *   *_/15 * * * * cd /path/to/project && GOOGLE_ROUTES_KEY=... node scripts/collect-corridor-speeds.mjs
+ *   *_/15 * * * * cd /path/to/project && GOOGLE_ROUTES_KEY=... node scripts/collect/corridor-speeds.mjs
  *   (remove the underscore; it is there so this comment is not a block end)
  *
  * Output: data/raw/corridor-speeds.ndjson, one JSON object per sample. Append
@@ -23,7 +23,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'data', 'raw', 'corridor-speeds.ndjson');
 const ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 

@@ -11,12 +11,15 @@
     "api": "node server/start.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
     "test": "vitest run",
-    "journey": "node scripts/journey.mjs",
-    "audit:network": "node scripts/network-audit.mjs",
-    "collect:places": "node scripts/collect-places.mjs",
-    "collect:times": "node scripts/collect-network-times.mjs",
-    "build:times": "node scripts/build-network-times.mjs",
-    "plan:sampling": "node scripts/sampling-plan.mjs"
+    "journey": "node scripts/dev/journey.mjs",
+    "audit:network": "node scripts/dev/network-audit.mjs",
+    "collect:places": "node scripts/collect/places.mjs",
+    "collect:times": "node scripts/collect/network-times.mjs",
+    "build:times": "node scripts/build/network-times.mjs",
+    "plan:sampling": "node scripts/dev/sampling-plan.mjs",
+    "collect:corridors": "node scripts/collect/corridor-speeds.mjs",
+    "collect:air": "node scripts/collect/air-quality.mjs",
+    "build:corridors": "node scripts/build/corridor-speeds.mjs"
   },
   "dependencies": {
     "d3-array": "^3.2.4",

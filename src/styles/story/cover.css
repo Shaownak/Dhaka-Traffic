@@ -1,0 +1,83 @@
+/* =====================================================================
+   SECTIONS STYLING — Advanced AI Lab Data Studio
+   One type scale, one spacing scale, one button system. Flat, editorial, printed-feeling.
+   ===================================================================== */
+
+/* ---------- 1. the jam (Hero) ---------- */
+/* The 6vw gutter lives here, not on .jam-inner, so the cover text sits on the
+   same column as every `section > .wrap` below it. The canvas and the scrim are
+   absolutely positioned against the padding box, so they still run full bleed. */
+.jam {
+  min-height: 100svh; padding: 0 6vw; display: flex; align-items: stretch;
+  background: linear-gradient(170deg, #2E2119 0%, var(--ink) 55%, #120A07 100%);
+  overflow: hidden; position: relative;
+}
+#lanes { position: absolute; inset: 0; width: 100%; height: 100%; }
+.jam-fade {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(98deg, rgba(18,10,7,.985) 0%, rgba(18,10,7,.92) 30%, rgba(18,10,7,.52) 58%, rgba(18,10,7,.06) 92%),
+    linear-gradient(to top, rgba(18,10,7,.92) 0%, rgba(18,10,7,.35) 28%, rgba(18,10,7,0) 60%);
+}
+/* Masthead at the top, headline block at the foot. Anchoring both ends keeps
+   the kicker off the very edge of the screen and stops it drifting with the
+   height of whatever sits below it. */
+.jam-inner {
+  position: relative; z-index: 2; width: 100%; max-width: 1160px; margin: 0 auto;
+  min-height: 100svh; padding: 5vh 0 6vh;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.jam-body { display: block; }
+.kicker {
+  font-family: var(--sans); font-weight: 700; font-size: var(--t-sm); letter-spacing: .16em;
+  color: var(--marigold); margin: 0 0 1.6rem; text-transform: uppercase;
+}
+/* space-between owns the separation on the cover */
+.jam .kicker { margin-bottom: 0; }
+.jam h1 {
+  font-size: var(--t-3xl); color: var(--cream); max-width: 9.5ch;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.jam .lede { color: #C9B8AE; margin: var(--s6) 0 0; max-width: 44ch; font-size: var(--t-md); }
+
+.hero-stats {
+  display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 2.2rem;
+}
+.hero-stat-pill {
+  background: rgba(248, 243, 234, 0.08); border: 1px solid rgba(248, 243, 234, 0.18);
+  border-radius: var(--radius-pill); padding: 0.45rem 1rem; font-size: 0.84rem; font-weight: 600;
+  color: var(--cream); display: flex; align-items: center; gap: 0.5rem;
+}
+.hero-stat-pill b { color: var(--marigold); font-family: var(--display); font-size: 1.05rem; }
+
+.scrollcue {
+  margin-top: var(--s7); font-size: var(--t-xs); letter-spacing: .18em; color: #A89689; font-weight: 700;
+  text-transform: uppercase; display: flex; align-items: center; gap: 0.6rem;
+}
+.scrollcue::after {
+  content: '↓'; font-size: 1.1rem; animation: bounce-arrow 1.8s infinite ease-in-out;
+}
+@keyframes bounce-arrow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* ---------- 2. race ---------- */
+.race { background: var(--cream); padding-bottom: 9vh; }
+.race h2 { max-width: 18ch; }
+.race-svg { width: 100%; height: auto; aspect-ratio: 1000/340; display: block; margin-top: 2.5rem; }
+.race-note { font-size: .92rem; color: var(--ink-light); margin-top: 1.2rem; }
+
+/* ---------- provenance chips ---------- */
+.chip {
+  display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  padding: .32rem .68rem; border-radius: var(--radius-pill); white-space: nowrap;
+}
+.chip-src {
+  color: inherit; text-decoration: none; border: 1.5px solid currentColor; opacity: .78;
+  transition: all .18s ease;
+}
+.chip-src:hover, .chip-src:focus-visible { opacity: 1; background: rgba(242, 163, 16, 0.14); border-color: var(--marigold); }
+.srcline { font-size: .84rem; color: var(--ink-light); margin-top: 1.4rem; display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.cover-src { margin: 1.6rem 0 0; color: #C9B8AE; }
+

@@ -1,5 +1,5 @@
 {
-  "note": "Written by scripts/build-network-times.mjs. Empty until a collection run has happened, in which case the trip planner falls back to the modeled speeds in src/data/network.ts and says so on screen.",
+  "note": "Written by scripts/build/network-times.mjs. Empty until a collection run has happened, in which case the trip planner falls back to the modeled speeds in src/data/network.ts and says so on screen.",
   "generatedAt": null,
   "source": null,
   "departureDates": null,

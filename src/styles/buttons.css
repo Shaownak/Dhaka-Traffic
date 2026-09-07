@@ -1,0 +1,78 @@
+/* =====================================================================
+   BUTTONS — one system, every section
+   Same metrics everywhere; a section only declares its accent. The weight
+   never changes between states, so a button cannot re-flow its own label
+   when it is pressed.
+   ===================================================================== */
+.ghost,
+.map-btn,
+.cost-tab,
+.picker button,
+.chips button,
+.cam-presets button,
+.rain-btn,
+.data-hub-btn {
+  --btn-accent: currentColor;
+  --btn-ink: var(--cream);
+  font-family: var(--sans); font-weight: 600; font-size: .88rem; line-height: 1.2;
+  letter-spacing: .012em; color: inherit; background: transparent;
+  border: 1.5px solid color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: var(--radius-pill); padding: .58rem 1.2rem; cursor: pointer;
+  display: inline-flex; align-items: center; gap: .45rem;
+  /* never `all`: transitioning layout is what makes hovers feel cheap */
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.ghost:hover,
+.map-btn:hover,
+.cost-tab:hover,
+.picker button:hover,
+.chips button:hover,
+.cam-presets button:hover,
+.rain-btn:hover,
+.data-hub-btn:hover {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* the press is acknowledged with weight of colour, not a jump */
+.ghost:active,
+.map-btn:active,
+.cost-tab:active,
+.picker button:active,
+.chips button:active,
+.cam-presets button:active,
+.rain-btn:active,
+.data-hub-btn:active {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+/* the selected state: the accent fills, and it is the only thing that does */
+.ghost[aria-expanded="true"],
+.map-btn[aria-pressed="true"],
+.cost-tab[aria-pressed="true"],
+.picker button[aria-pressed="true"],
+.chips button[aria-pressed="true"],
+.cam-presets button[aria-pressed="true"],
+.rain-btn[aria-pressed="true"],
+.rain-btn.active {
+  background: var(--btn-accent);
+  border-color: var(--btn-accent);
+  color: var(--btn-ink);
+}
+
+.ghost:focus-visible,
+.map-btn:focus-visible,
+.cost-tab:focus-visible,
+.picker button:focus-visible,
+.chips button:focus-visible,
+.cam-presets button:focus-visible,
+.rain-btn:focus-visible,
+.data-hub-btn:focus-visible {
+  outline: 2px solid var(--marigold); outline-offset: 3px;
+}
+
+/* Ghost button: a secondary control, so it keeps its outline and full-strength
+   text rather than being dimmed into looking disabled */
+.ghost { margin-top: 2rem; --btn-accent: var(--cream); --btn-ink: var(--indigo); }
+

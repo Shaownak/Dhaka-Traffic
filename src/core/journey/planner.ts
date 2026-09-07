@@ -391,7 +391,7 @@ export async function planJourney(request: JourneyRequest): Promise<JourneyPlan>
   if (request.stop) {
     const loaded = await osmPlaces.load();
     if (!loaded) {
-      notices.push('No places dataset is available, so no stop could be suggested. Run scripts/collect-places.mjs to collect one.');
+      notices.push('No places dataset is available, so no stop could be suggested. Run scripts/collect/places.mjs to collect one.');
     } else {
       attribution.push(osmPlaces.attribution);
       const direct = ranked[0]!.route;

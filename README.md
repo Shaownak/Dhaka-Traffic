@@ -90,22 +90,43 @@ Elsewhere the same discipline:
 index.html                 the markup
 src/
   main.ts                  entry, section observers, boot order
+  util.ts                  congestion scale, reduced-motion, observers
   data/                    ALL constants: figures, network, tuning weights
-  core/                    the domain, no DOM anywhere
+    traffic.ts             the story's numbers and every citation
+    network.ts             28 junctions, 39 roads
+    intelligence.ts        scoring weights and thresholds
+    measured/              collected data: places, journey times
+  core/                    the domain — no DOM anywhere
     geo.ts                 distance, projection, position along a path
-    geocoding/resolve.ts   text to junction
-    routing/graph.ts       Dijkstra and Yen's k-shortest-paths
-    traffic/hierarchy.ts   which source answers, and how much to trust it
-    traffic/confidence.ts  what our knowledge is worth, distinct from reliability
+    geocoding/             text to junction
+    routing/               time-dependent Dijkstra, Yen's k-shortest-paths
+    traffic/               the source hierarchy, and confidence in it
     places/                the OSM dataset, spatial index, opening hours
     optimization/          scoring routes, stops, departure search
     nl/                    sentence to constraints, and the schema that gates it
     weather/               forecast, reported and never applied
-    journey/planner.ts     THE orchestrator
-  sections/                the page, including trip/ (the planner UI)
+    journey/               THE orchestrator, and its types
+  sections/                the story sections
+    street/                the Three.js simulation
+    trip/                  the planner UI
+      index.ts             controller: DOM wiring only
+      state.ts             the request being built, and what is on screen
+      results.ts           timeline, departure advice, curve, option cards
+      map.ts               the route schematic
+      format.ts            shared formatting
   styles/
-server/api.ts              HTTP transport over the same core
-scripts/                   collection, diagnostics, CLI planning
+    tokens.css             colour, type scale, spacing
+    base.css
+    buttons.css            one button system, every section
+    sections.css           an index: imports story/ in page order
+    story/                 one file per section of the page
+    planner.css            the planner's own surface
+server/                    HTTP transport over the same core
+scripts/
+  collect/                 pull data from providers
+  build/                   turn raw samples into what the app reads
+  dev/                     CLI planner, network audit, sampling economics
+  lib/                     the loader that lets Node import the TS source
 docs/
 ```
 

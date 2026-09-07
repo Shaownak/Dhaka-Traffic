@@ -7,8 +7,8 @@
  * alongside the central value, because a single number per hour is a claim the
  * data cannot support.
  *
- *   node scripts/aggregate-speeds.mjs
- *   node scripts/aggregate-speeds.mjs --include-weekends
+ *   node scripts/build/corridor-speeds.mjs
+ *   node scripts/build/corridor-speeds.mjs --include-weekends
  *
  * Writes src/data/measured/hourly.json. Nothing is overwritten in traffic.ts
  * automatically: the last step is yours, so a bad collection window cannot
@@ -18,7 +18,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RAW = join(ROOT, 'data', 'raw', 'corridor-speeds.ndjson');
 const OUT = join(ROOT, 'src', 'data', 'measured', 'hourly.json');
 
@@ -46,7 +46,7 @@ async function main() {
   try {
     text = await readFile(RAW, 'utf8');
   } catch {
-    console.error(`No samples yet at ${RAW}. Run scripts/collect-corridor-speeds.mjs first.`);
+    console.error(`No samples yet at ${RAW}. Run scripts/collect/corridor-speeds.mjs first.`);
     process.exit(1);
   }
 

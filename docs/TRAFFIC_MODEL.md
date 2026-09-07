@@ -24,7 +24,7 @@ first that can answer:
 The unavailable tiers return `null`. They do not fall through to something that
 looks similar and get labelled as though they had answered.
 
-`profile` activates by itself the moment `scripts/build-network-times.mjs`
+`profile` activates by itself the moment `scripts/build/network-times.mjs`
 writes a non-empty file. No code changes. This was verified by generating a
 synthetic collection run: the tier flipped from `baseline` to `profile`,
 coverage went from 0% to 100%, and confidence rose from LOW (31/100) to
@@ -133,7 +133,7 @@ training data would be decoration.
 
 ## Collecting the data
 
-`scripts/sampling-plan.mjs` computes what filling the table costs.
+`scripts/dev/sampling-plan.mjs` computes what filling the table costs.
 
 1,872 cells (39 roads × 24 hours × 2 day types). For quantile estimation each
 needs roughly 30 samples minimum, 50 comfortable.

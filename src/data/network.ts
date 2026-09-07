@@ -9,7 +9,7 @@
  * ⚠ PROVENANCE. The place names, the connections between them, and the
  * approximate distances are real. The SPEEDS ARE MODELED — assigned to match
  * the ordering these roads are reported to have, not measured. Until
- * scripts/collect-link-times.mjs has run, every duration this network produces
+ * scripts/collect/network-times.mjs has run, every duration this network produces
  * is an estimate built on those modeled speeds, and the trip planner says so
  * on screen. The collector replaces `peakKmh`/`freeKmh` wholesale.
  */
