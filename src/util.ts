@@ -14,8 +14,40 @@ export const TEAL = '#0D6A6C';
  */
 export const METRO = '#161440';
 
-/** Read once at boot; the page does not offer a toggle of its own. */
-export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/*
+ * Reduced motion, read live rather than once at boot.
+ *
+ * Two reasons it is not a plain `const matchMedia(...).matches`:
+ *
+ *   - Somebody who turns the preference on mid-visit should get the quiet
+ *     version of the page without reloading. The listener below makes REDUCED a
+ *     live binding, which ES modules propagate to every importer.
+ *   - `matchMedia` does not exist outside a browser, and this module is
+ *     imported by code that runs under the test runner. Guarding it is what
+ *     lets the congestion scale be tested at all.
+ */
+const motionQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+  ? window.matchMedia('(prefers-reduced-motion: reduce)')
+  : null;
+
+export let REDUCED = motionQuery ? motionQuery.matches : false;
+
+const motionListeners = new Set<(reduced: boolean) => void>();
+
+if (motionQuery) {
+  motionQuery.addEventListener('change', (event) => {
+    REDUCED = event.matches;
+    for (const listener of motionListeners) listener(REDUCED);
+  });
+}
+
+/** Subscribe to preference changes. Returns an unsubscribe function. */
+export function onReducedMotionChange(fn: (reduced: boolean) => void): () => void {
+  motionListeners.add(fn);
+  return () => {
+    motionListeners.delete(fn);
+  };
+}
 
 /**
  * The one congestion scale. Every chart and the 3D scene color speed through
@@ -80,4 +112,51 @@ export function shortHourLabel(hour: number): string {
   if (h < 12) return `${h} AM`;
   if (h === 12) return '12 PM';
   return `${h - 12} PM`;
+}
+/** Copies text to clipboard with graceful textarea fallback and visual button feedback. */
+export function copyTextWithFeedback(
+  text: string,
+  btn: HTMLElement,
+  successLabel = 'Copied',
+  errorLabel = 'Failed to copy',
+): void {
+  const original = btn.textContent;
+  const show = (label: string): void => {
+    btn.textContent = label;
+    setTimeout(() => {
+      btn.textContent = original;
+    }, 2200);
+  };
+
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(text)
+      .then(() => show(successLabel))
+      .catch(() => fallbackCopy(text, show, successLabel, errorLabel));
+  } else {
+    fallbackCopy(text, show, successLabel, errorLabel);
+  }
+}
+
+function fallbackCopy(
+  text: string,
+  show: (label: string) => void,
+  successLabel: string,
+  errorLabel: string,
+): void {
+  try {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    area.style.pointerEvents = 'none';
+    document.body.appendChild(area);
+    area.focus();
+    area.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(area);
+    show(success ? successLabel : errorLabel);
+  } catch {
+    show(errorLabel);
+  }
 }

@@ -2,7 +2,7 @@
    1. THE JAM — lanes of vehicles crawling across the cover
    A 2D canvas: scenic visual representation of Dhaka traffic.
    ===================================================================== */
-import { REDUCED } from '../util';
+import { REDUCED, onReducedMotionChange } from '../util';
 
 interface VehicleStyle {
   type?: string;
@@ -66,6 +66,15 @@ export class Jam {
     if (!ctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
     this.resize();
+
+    onReducedMotionChange((reduced) => {
+      if (reduced) {
+        this.stop();
+        this.draw(0);
+      } else {
+        this.start();
+      }
+    });
   }
 
   resize(): void {

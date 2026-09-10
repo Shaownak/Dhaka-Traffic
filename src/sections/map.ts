@@ -94,7 +94,13 @@ export function drawMap(): void {
     .on('pointerleave', leave)
     .on('focus', enter)
     .on('blur', leave)
-    .on('click', clickLink);
+    .on('click', clickLink)
+    .on('keydown', (e: KeyboardEvent, d: MapLink) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        clickLink(e, d);
+      }
+    });
 
   // Redundant encoding. The color ramp survives a color-blindness audit, but it
   // should never be the only channel: the slowest corridors are also hatched,

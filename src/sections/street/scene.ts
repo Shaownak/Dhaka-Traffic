@@ -544,9 +544,20 @@ export class StreetScene {
       py = e.clientY;
       if (REDUCED) this.renderOnce();
     });
-    const stop = (): void => {
+    // Releases the pointer capture taken on pointerdown. Without this a drag
+    // that ends outside the canvas can leave the element holding capture, and
+    // it stops responding to later input.
+    const stop = (event: PointerEvent): void => {
+      if (!on) return;
       on = false;
       el.classList.remove('dragging');
+      try {
+        if (el.hasPointerCapture(event.pointerId)) {
+          el.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        // some browsers throw on a pointer id they no longer know about
+      }
     };
     el.addEventListener('pointerup', stop);
     el.addEventListener('pointercancel', stop);
@@ -623,6 +634,22 @@ export class StreetScene {
 
   dispose(): void {
     this.stop();
+
+    // Clearing the scene graph drops the references but not the GPU memory:
+    // geometries and materials hold buffers and textures that only their own
+    // dispose() releases. Without this the whole city leaks every time the
+    // scene is torn down and rebuilt.
+    this.scene.traverse((obj) => {
+      if (obj instanceof Mesh || obj instanceof InstancedMesh) {
+        obj.geometry?.dispose();
+        if (Array.isArray(obj.material)) {
+          for (const material of obj.material) material.dispose();
+        } else if (obj.material) {
+          obj.material.dispose();
+        }
+      }
+    });
+
     this.city.clear();
     this.renderer.dispose();
     this.renderer.domElement.remove();

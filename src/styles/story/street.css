@@ -4,11 +4,11 @@
 .street .lede { color: #D5BDB6; }
 .stage {
   position: relative; margin-top: 3.4rem; border-radius: var(--radius-md); overflow: hidden;
-  height: min(66svh, 620px); background: #0E050A; cursor: grab; touch-action: none;
+  height: min(66svh, 620px); background: #0E050A; cursor: grab; touch-action: pan-y;
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(248,243,234,0.12);
 }
 .stage.dragging { cursor: grabbing; }
-.stage canvas { display: block; width: 100%; height: 100%; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
 .stage-hud {
   position: absolute; left: 24px; top: 22px; pointer-events: none;
   font-variant-numeric: tabular-nums;
@@ -89,3 +89,16 @@ input[type=range]:focus-visible { outline: 2px solid var(--marigold); outline-of
 }
 .fact span { font-size: .92rem; color: #F8D9DF; line-height: 1.45; }
 
+
+/* On a phone the control grid has no room to sit side by side. */
+@media (max-width: 540px) {
+  .ctrls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .sub-ctrls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}

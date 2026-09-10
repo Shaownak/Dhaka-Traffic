@@ -3,7 +3,7 @@
    Owns the controls and the HUD. Three is pulled in only when the section
    comes near the viewport, and only if the browser can actually draw it.
    ===================================================================== */
-import { REDUCED, clockLabel, whileVisible } from '../../util';
+import { REDUCED, clockLabel, onReducedMotionChange, whileVisible } from '../../util';
 import { CORRIDORS } from '../../data/traffic';
 import { TrafficModel, corridorConditions } from './traffic-model';
 import type { CameraPreset, StreetScene } from './scene';
@@ -52,6 +52,17 @@ async function load(stage: HTMLElement): Promise<void> {
     scene.setRain(isRain);
     scene.resize();
     scene.start();
+
+    // Honour the preference if it is turned on mid-visit: freeze on a single
+    // painted frame rather than leaving the loop running behind a static page.
+    onReducedMotionChange((reduced) => {
+      if (reduced) {
+        scene?.stop();
+        scene?.renderOnce();
+      } else {
+        scene?.start();
+      }
+    });
 
     // Loop stops when off-screen to save battery
     whileVisible(stage, {

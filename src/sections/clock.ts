@@ -120,6 +120,12 @@ export function drawClock(): void {
     .on('focus', enter)
     .on('blur', leave)
     .on('click', clickWedge)
+    .on('keydown', (e: KeyboardEvent, d: Hour) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        clickWedge(e, d);
+      }
+    })
     .attr('fill', (d) => speedColor(d.v))
     .attr('d', (d) => wedge.outerRadius(REDUCED ? r(d.v) : r0 + 2)(d));
 

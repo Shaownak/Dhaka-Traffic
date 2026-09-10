@@ -15,6 +15,7 @@ import {
   SOURCES,
   SPEED_HISTORY,
 } from '../data/traffic';
+import { copyTextWithFeedback } from '../util';
 
 /**
  * Fill every `[data-source="id"]` with a citation chip linking to the matching
@@ -140,13 +141,7 @@ function setupDataExporter(): void {
   if (copyBtn && copyBtn.dataset['wired'] !== '1') {
     copyBtn.dataset['wired'] = '1';
     copyBtn.addEventListener('click', () => {
-      void navigator.clipboard.writeText(JSON.stringify(fullDataset, null, 2)).then(() => {
-        const orig = copyBtn.textContent;
-        copyBtn.textContent = 'Copied';
-        setTimeout(() => {
-          copyBtn.textContent = orig;
-        }, 2200);
-      });
+      copyTextWithFeedback(JSON.stringify(fullDataset, null, 2), copyBtn);
     });
   }
 

@@ -5,7 +5,7 @@
 import { select } from 'd3-selection';
 import 'd3-transition';
 import { CONGESTION_SHARE, EQUIVALENTS, ROUTES, WORK_YEAR } from '../data/traffic';
-import { CREAM, REDUCED } from '../util';
+import { CREAM, REDUCED, copyTextWithFeedback } from '../util';
 
 interface Cell {
   i: number;
@@ -265,13 +265,7 @@ export function initCost(): void {
       const text = `I lose ${hours} hours a year to Dhaka traffic on ${name} — the equivalent of `
         + `${lostDays} working days, spread over ${commutingDays()} commuting days. `
         + `(Source: Seven Kilometers an Hour)`;
-      void navigator.clipboard.writeText(text).then(() => {
-        const original = copyBtn.textContent;
-        copyBtn.textContent = 'Copied';
-        setTimeout(() => {
-          copyBtn.textContent = original;
-        }, 2200);
-      });
+      copyTextWithFeedback(text, copyBtn);
     });
   }
 
