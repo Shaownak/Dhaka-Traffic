@@ -8,12 +8,23 @@
 name: Collect traffic samples
 
 on:
-  schedule:
-    # Every 15 minutes. GitHub's scheduler drifts under load, sometimes by ten
-    # minutes or more. That is tolerable here only because the collector stamps
-    # each row with the actual time it ran and the aggregator buckets by that
-    # stamp, not by the intended slot. A late sample is still a valid sample.
-    - cron: '*/15 * * * *'
+  # MANUAL ONLY, deliberately.
+  #
+  # The schedule below is commented out. Left active it would begin sampling a
+  # billed API every fifteen minutes the moment somebody added the
+  # GOOGLE_ROUTES_KEY secret — starting a spend nobody decided to start, on a
+  # shared organisational billing account.
+  #
+  # Collection is a decision with a budget attached. Uncomment this only when
+  # that decision has actually been made, and check the daily ceiling in
+  # scripts/lib/budget.mjs first.
+  #
+  # schedule:
+  #   # Every 15 minutes. GitHub's scheduler drifts under load, sometimes by ten
+  #   # minutes or more. That is tolerable here only because the collector stamps
+  #   # each row with the actual time it ran and the aggregator buckets by that
+  #   # stamp, not by the intended slot. A late sample is still a valid sample.
+  #   - cron: '*/15 * * * *'
   workflow_dispatch:
 
 # One run at a time: two writers appending to the same file would interleave.
@@ -37,7 +48,13 @@ jobs:
       - name: Sample corridor speeds
         env:
           GOOGLE_ROUTES_KEY: ${{ secrets.GOOGLE_ROUTES_KEY }}
-        run: node scripts/collect/corridor-speeds.mjs
+        # --live is required, because dry run is the default everywhere.
+        # --limit caps THIS RUN. Note the limitation: each CI run is a fresh
+        # container, so the on-disk ledger in data/.budget/ does not persist
+        # between runs and cannot enforce a daily total here. In CI the daily
+        # spend is governed by the cron frequency times this per-run ceiling —
+        # six corridors every fifteen minutes is ~576 requests a day.
+        run: node scripts/collect/corridor-speeds.mjs --live --limit 20
 
       - name: Sample air quality
         # Optional: the job stays green if no OpenAQ key is configured.

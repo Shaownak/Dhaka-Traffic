@@ -15,3 +15,6 @@ src/data/measured/*
 .env
 .env.local
 
+
+# spend ledger, local only
+data/.budget/

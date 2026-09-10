@@ -9,8 +9,8 @@
  * from live conditions — which means the whole sweep runs in one sitting
  * instead of over four weeks.
  *
- *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs --dry-run
- *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs
+ *   node scripts/collect/network-times.mjs                       (dry run, free)
+ *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs --live --limit 20
  *   GOOGLE_ROUTES_KEY=... node scripts/collect/network-times.mjs --hours 6,9,13,18,21
  *
  * What this is and is not: Google's prediction of a typical Tuesday at 6 PM is
@@ -23,6 +23,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { announce, openBudget, parseMode } from '../lib/budget.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'data', 'raw', 'network-times.ndjson');
@@ -31,7 +32,9 @@ const ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 /** Dhaka is UTC+6 all year, so local hour and offset never drift. */
 const DHAKA_OFFSET_HOURS = 6;
 
-const DRY = process.argv.includes('--dry-run');
+// Dry run is the DEFAULT. Spending requires --live; see scripts/lib/budget.mjs.
+const MODE = parseMode();
+const DRY = MODE.dryRun;
 const KEY = process.env['GOOGLE_ROUTES_KEY'];
 
 const hoursArg = process.argv.indexOf('--hours');
@@ -124,20 +127,36 @@ async function main() {
   console.log(`${places.size} places, ${roads.length} roads`);
   console.log(`${HOURS.length} hours x ${days.length} day types = ${total} requests`);
 
+  const budget = await openBudget('network-times', MODE.limit);
+  announce(MODE, total, budget);
+
   if (DRY) {
     const [first] = roads;
     const from = places.get(first.a);
     const to = places.get(first.b);
     const when = nextLocal(2, 18);
-    console.log(`\nExample: ${from.name} to ${to.name}, Tuesday 6 PM Dhaka`);
+    console.log(`Example: ${from.name} to ${to.name}, Tuesday 6 PM Dhaka`);
     console.log(`departureTime ${when.toISOString()}`);
     console.log('\nNo request was sent. Verify the coordinates against a map before a real run.');
     return;
   }
 
+  if (!budget.canSpend(1)) {
+    console.error(`Daily budget already exhausted: ${budget.report()}`);
+    console.error('Raise it deliberately with --limit N, or wait until tomorrow.');
+    process.exit(1);
+  }
+  if (total > budget.remaining) {
+    console.log(
+      `NOTE: ${total} requests planned but only ${budget.remaining} left in today's budget. `
+      + 'The sweep will stop when it runs out, and the partial data is still valid.\n',
+    );
+  }
+
   await mkdir(dirname(OUT), { recursive: true });
   let done = 0;
   let failed = 0;
+  let stopped = false;
 
   for (const day of days) {
     for (const hour of HOURS) {
@@ -147,6 +166,18 @@ async function main() {
         const from = places.get(road.a);
         const to = places.get(road.b);
         if (!from || !to) continue;
+
+        // Checked before every single request, not once at the top: the ceiling
+        // has to hold even if the sweep is larger than the budget allows.
+        if (!budget.canSpend(1)) {
+          stopped = true;
+          break;
+        }
+        // Recorded BEFORE the call, and whatever the outcome — a request that
+        // errors is still billed, so counting only successes would undercount
+        // exactly when something is looping on failures.
+        await budget.record(1, `${road.a}|${road.b} ${day.dayType} ${hour}h`);
+
         try {
           const result = await sample(from, to, departure);
           rows.push({
@@ -171,12 +202,21 @@ async function main() {
         }
         done++;
       }
-      await appendFile(OUT, rows.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf8');
+      if (rows.length) {
+        await appendFile(OUT, rows.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf8');
+      }
       console.log(`  ${day.dayType} ${String(hour).padStart(2, '0')}:00  ${done}/${total}`);
+      if (stopped) break;
     }
+    if (stopped) break;
   }
 
+  if (stopped) {
+    console.log(`\nSTOPPED at the daily ceiling. ${budget.report()}`);
+    console.log('What was collected is on disk and valid; run again tomorrow, or raise --limit.');
+  }
   console.log(`\n${done - failed} of ${total} succeeded, ${failed} failed -> ${OUT}`);
+  console.log(budget.report());
   console.log('Next: node scripts/build/network-times.mjs');
 }
 

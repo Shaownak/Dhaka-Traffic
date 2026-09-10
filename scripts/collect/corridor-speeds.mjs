@@ -22,6 +22,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { announce, openBudget, parseMode } from '../lib/budget.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'data', 'raw', 'corridor-speeds.ndjson');
@@ -41,7 +42,9 @@ const CORRIDORS = [
   { id: 'badda-bashundhara', name: 'Badda to Bashundhara', from: [23.7806, 90.4256], to: [23.8203, 90.4300] },
 ];
 
-const DRY = process.argv.includes('--dry-run');
+// Dry run is the DEFAULT. Spending requires --live; see scripts/lib/budget.mjs.
+const MODE = parseMode();
+const DRY = MODE.dryRun;
 const KEY = process.env['GOOGLE_ROUTES_KEY'];
 
 if (!KEY && !DRY) {
@@ -106,7 +109,18 @@ async function main() {
   const dhaka = new Date(now.getTime() + 6 * 3600_000);
   const rows = [];
 
+  const budget = await openBudget('corridor-speeds', MODE.limit);
+  announce(MODE, CORRIDORS.length, budget);
+
   for (const corridor of CORRIDORS) {
+    if (!DRY) {
+      if (!budget.canSpend(1)) {
+        console.log(`Stopped at the daily ceiling. ${budget.report()}`);
+        break;
+      }
+      // counted before the call, and whether or not it succeeds
+      await budget.record(1, corridor.id);
+    }
     try {
       const result = await sample(corridor);
       rows.push({
