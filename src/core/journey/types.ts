@@ -139,9 +139,12 @@ export interface JourneyOption {
 export interface DepartureAdvice {
   /** Minutes after midnight. */
   recommended: number;
+  /** Earliest checked feasible departure, not an optimum or a guarantee. */
   earliestSensible: number;
+  /** Latest checked departure whose modeled upper arrival plus buffer meets the deadline. */
   latestSafe: number;
   arrival: ArrivalRange;
+  /** Slack beyond the upper end of the recommended arrival range. */
   bufferMinutes: number;
   /** Every candidate considered, for the chart. */
   options: {

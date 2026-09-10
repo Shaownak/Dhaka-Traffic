@@ -314,7 +314,8 @@ function kShortestPaths(
       // The root may not be revisited, or the path would loop.
       const bannedNodes = new Set(rootPath.slice(0, -1));
 
-      const spur = shortestPath(spurNode, to, hour, dayType, bannedNodes, bannedEdges);
+      const spurHour = hour + routeFrom(rootPath, hour, dayType).minutes / 60;
+      const spur = shortestPath(spurNode, to, spurHour, dayType, bannedNodes, bannedEdges);
       if (!spur) continue;
 
       const total = [...rootPath.slice(0, -1), ...spur];

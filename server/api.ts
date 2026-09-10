@@ -19,11 +19,12 @@ import { PREFERENCES, STOP_SEARCH } from '../src/data/intelligence';
 import { geocode } from '../src/core/geocoding/resolve';
 import { planJourney } from '../src/core/journey/planner';
 import { JourneyError } from '../src/core/journey/types';
+import { PLACE_KINDS } from '../src/core/nl/schema';
 import { parseJourneyText } from '../src/core/nl/parse';
 import { dateFrom, toJourneyRequest, type RawJourneyBody } from './request';
 import { osmPlaces, type PlaceKind } from '../src/core/places/provider';
 import { departureCurve, fastestRoute, routeOptions, dayTypeOf } from '../src/core/routing/graph';
-import { availableTiers, estimateLeg, hasProfileData, TIER_LABEL } from '../src/core/traffic/hierarchy';
+import { availableTiers, estimateLeg, hasProfileData, hasProviderData, TIER_ORDER, TIER_LABEL } from '../src/core/traffic/hierarchy';
 import { openMeteo, weatherNote } from '../src/core/weather/provider';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -59,7 +60,15 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
     chunks.push(chunk as Buffer);
   }
   if (!chunks.length) return {};
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  const body: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new Error('INVALID_BODY');
+  return body;
+}
+
+function coordinate(value: string | null, max: number): number {
+  if (value === null || !value.trim()) return NaN;
+  const number = Number(value);
+  return Number.isFinite(number) && Math.abs(number) <= max ? number : NaN;
 }
 
 /* ---------- endpoints ---------- */
@@ -81,10 +90,11 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
       traffic: {
         // The honest inventory: what can actually answer, and what cannot.
         tiersAvailable: availableTiers(),
-        tiersUnavailable: hasProfileData() ? ['observed', 'predicted'] : ['observed', 'profile', 'predicted'],
+        tiersUnavailable: TIER_ORDER.filter(tier => !availableTiers().includes(tier)),
         collectedJourneyTimes: hasProfileData(),
         note: hasProfileData()
           ? 'Some roads have collected journey times; the rest use the modeled baseline.'
+          : hasProviderData() ? 'Provider forecasts are available, but no journey times have been observed.'
           : 'No journey times have been collected. Every estimate uses the modeled baseline.',
       },
       places: {
@@ -125,15 +135,19 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
 
   /* --- POI search --- */
   if (method === 'GET' && path === '/api/places/search') {
-    const lat = Number(url.searchParams.get('lat'));
-    const lon = Number(url.searchParams.get('lon'));
+    const lat = coordinate(url.searchParams.get('lat'), 90);
+    const lon = coordinate(url.searchParams.get('lon'), 180);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       return fail(400, 'MISSING_POINT', 'Pass ?lat= and ?lon=.');
     }
-    const radiusKm = Math.min(10, Number(url.searchParams.get('radiusKm') ?? 1.5) || 1.5);
+    const radiusKm = Number(url.searchParams.get('radiusKm') ?? 1.5);
+    if (!Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > 10) return fail(400, 'BAD_RADIUS', 'radiusKm must be greater than 0 and at most 10.');
     const kindParam = url.searchParams.get('kind');
     const kinds = kindParam ? (kindParam.split(',') as PlaceKind[]) : undefined;
 
+    if (kinds?.some(k => !PLACE_KINDS.includes(k))) return fail(400, 'BAD_KIND', 'Unknown place kind.');
+    // The dataset is restricted to Dhaka. Avoid unbounded polar grid queries.
+    if (lat < 23 || lat > 25 || lon < 89 || lon > 92) return ok({ count: 0, attribution: osmPlaces.attribution, places: [] });
     const loaded = await osmPlaces.load();
     if (!loaded) {
       return fail(503, 'NO_PLACES_DATASET',
@@ -145,14 +159,17 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
 
   /* --- raw routing --- */
   if (method === 'POST' && path === '/api/routes') {
-    const body = (await readJson(req)) as RawJourneyBody & { alternatives?: number };
+    const shaped = toJourneyRequest(await readJson(req));
+    if ('problems' in shaped) return fail(400, 'INVALID_REQUEST', 'The request could not be read.', shaped.problems);
+    const body = shaped.request;
+    if (body.arriveBy !== undefined || body.stop) return fail(400, 'UNSUPPORTED_CONSTRAINT', 'Use /api/journey/plan for deadlines or stops.');
     const originId = typeof body.origin === 'string' ? geocode(body.origin).match?.place.id : undefined;
     const destId = typeof body.destination === 'string' ? geocode(body.destination).match?.place.id : undefined;
     if (!originId || !destId) return fail(400, 'UNRESOLVED', 'Origin or destination could not be resolved.');
 
-    const date = dateFrom(body.date);
+    const date = body.date;
     const departAt = typeof body.departAt === 'number' ? body.departAt : 17 * 60;
-    const hour = Math.floor(departAt / 60) % 24;
+    const hour = (departAt / 60) % 24;
     const dayType = dayTypeOf(date);
     const limit = typeof body.alternatives === 'number' ? Math.max(1, Math.min(8, body.alternatives)) : 4;
 
@@ -273,8 +290,9 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
 
   /* --- weather --- */
   if (method === 'GET' && path === '/api/weather') {
-    const lat = Number(url.searchParams.get('lat') ?? 23.78);
-    const lon = Number(url.searchParams.get('lon') ?? 90.41);
+    const lat = coordinate(url.searchParams.get('lat') ?? '23.78', 90);
+    const lon = coordinate(url.searchParams.get('lon') ?? '90.41', 180);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return fail(400, 'BAD_POINT', 'Invalid latitude or longitude.');
     const when = url.searchParams.get('at');
     const at = when ? new Date(when) : new Date();
     if (Number.isNaN(at.getTime())) return fail(400, 'BAD_TIME', 'Pass ?at= as an ISO timestamp.');
@@ -291,7 +309,7 @@ async function handle(method: string, url: URL, req: IncomingMessage): Promise<H
 
 /* ---------- the server ---------- */
 
-const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+export const server = createServer((req: IncomingMessage, res: ServerResponse) => {
   const started = process.hrtime.bigint();
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const method = req.method ?? 'GET';
@@ -311,6 +329,7 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
         const status = error.code === 'NO_ROUTE' || error.code === 'DEADLINE_UNREACHABLE' ? 404 : 400;
         return fail(status, error.code, error.message, error.detail);
       }
+      if (error instanceof Error && error.message === 'INVALID_BODY') return fail(400, 'INVALID_REQUEST', 'Request body must be a JSON object.');
       if (error instanceof SyntaxError) {
         return fail(400, 'BAD_JSON', 'The request body was not valid JSON.');
       }
@@ -341,6 +360,7 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     });
 });
 
+export function startServer(): void {
 server.listen(PORT, () => {
   console.log(`Journey API on http://localhost:${PORT}`);
   console.log(`  GET  /api/health`);
@@ -356,3 +376,5 @@ server.listen(PORT, () => {
   console.log(`  GET  /api/weather?lat=23.78&lon=90.41`);
   console.log(`\nStops search within ${STOP_SEARCH.maxOffsetKm} km of a route.`);
 });
+
+}

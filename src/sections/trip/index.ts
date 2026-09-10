@@ -17,7 +17,7 @@ import { planJourney } from '../../core/journey/planner';
 import { parseJourneyText } from '../../core/nl/parse';
 import { JourneyError, type JourneyPlan, type JourneyRequest } from '../../core/journey/types';
 import type { PlaceKind } from '../../core/places/provider';
-import { form, requestFromState, view } from './state';
+import { applyIntent, form, requestFromState, view } from './state';
 import { render, showError } from './results';
 
 /** Guards against an older plan landing after a newer one. */
@@ -56,6 +56,7 @@ function fillPlaces(select: HTMLSelectElement, selected: string): void {
 }
 
 function minutesFromTime(value: string): number | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
   const [h, m] = value.split(':').map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
   return h! * 60 + m!;
@@ -88,7 +89,11 @@ export function initTrip(): void {
   });
   time.addEventListener('change', () => {
     const minutes = minutesFromTime(time.value);
-    if (minutes !== null) form.departMinutes = minutes;
+    if (minutes !== null) {
+      form.departMinutes = minutes;
+      if (form.deadlineOn) form.earliestDeparture = minutes;
+    }
+    if (minutes === null && form.deadlineOn) delete form.earliestDeparture;
     update();
   });
 
@@ -114,12 +119,23 @@ export function initTrip(): void {
     });
   }
 
+  const clockValue = (m: number): string => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  const syncDeparture = (): void => {
+    const label = document.querySelector('label[for="tripTime"]');
+    if (label) label.textContent = form.deadlineOn ? 'Leave no earlier than (optional)' : 'Leave at';
+    time.value = form.deadlineOn
+      ? form.earliestDeparture === undefined ? '' : clockValue(form.earliestDeparture)
+      : clockValue(form.departMinutes);
+  };
+
   /* deadline */
   const deadlineOn = document.getElementById('tripDeadlineOn') as HTMLInputElement | null;
   const deadlineTime = document.getElementById('tripDeadlineTime') as HTMLInputElement | null;
   if (deadlineOn && deadlineTime) {
     deadlineOn.addEventListener('change', () => {
       form.deadlineOn = deadlineOn.checked;
+      delete form.earliestDeparture;
+      syncDeparture();
       deadlineTime.disabled = !form.deadlineOn;
       update();
     });
@@ -159,6 +175,21 @@ export function initTrip(): void {
     setEnabled();
   }
 
+  const cuisine = document.getElementById('tripStopCuisine') as HTMLInputElement | null;
+  const requireOpen = document.getElementById('tripStopOpen') as HTMLInputElement | null;
+  const syncStopExtras = (): void => {
+    if (cuisine) { cuisine.disabled = !form.stopOn; cuisine.value = form.stopCuisine ?? ''; }
+    if (requireOpen) { requireOpen.disabled = !form.stopOn; requireOpen.checked = form.stopRequireOpen ?? true; }
+  };
+  cuisine?.addEventListener('change', () => {
+    if (cuisine.value.trim()) form.stopCuisine = cuisine.value.trim();
+    else delete form.stopCuisine;
+    update();
+  });
+  requireOpen?.addEventListener('change', () => { form.stopRequireOpen = requireOpen.checked; update(); });
+  stopOn?.addEventListener('change', syncStopExtras);
+  syncStopExtras();
+
   /* the two modes */
   const modeForm = document.getElementById('tripModeForm');
   const modeText = document.getElementById('tripModeText');
@@ -194,29 +225,33 @@ export function initTrip(): void {
         : parsed.problems.join(' ');
       read.className = `pf-read${parsed.ok ? '' : ' pf-read-bad'}`;
     }
-    if (!parsed.ok || !parsed.request) return;
+    if (!parsed.ok || !parsed.request) {
+      generation++;
+      showError(parsed.problems.join(' '));
+      return;
+    }
 
     // Mirror the sentence back into the form, so the two modes stay one form.
     const intent = parsed.request;
-    form.fromId = intent.origin;
-    form.toId = intent.destination;
-    form.date = new Date(`${intent.date}T12:00:00`);
-    form.deadlineOn = intent.arriveBy !== undefined;
-    if (intent.arriveBy !== undefined) form.deadlineMinutes = intent.arriveBy;
-    if (intent.departAt !== undefined) form.departMinutes = intent.departAt;
-    if (intent.preference) form.preference = intent.preference;
-    form.stopOn = Boolean(intent.stop);
-    if (intent.stop) {
-      form.stopKinds = [...intent.stop.kinds];
-      form.stopPosition = intent.stop.position;
-      form.stopDwell = intent.stop.dwellMinutes;
-    }
+    applyIntent(intent);
+    syncStopExtras();
 
     from.value = form.fromId;
     to.value = form.toId;
+    date.value = intent.date;
+    syncDeparture();
     if (pref) pref.value = form.preference;
+    const syncSelect = (select: HTMLSelectElement | null, value: string): void => {
+      if (!select) return;
+      if (![...select.options].some(o => o.value === value)) select.add(new Option(value, value));
+      select.value = value;
+    };
+    syncSelect(stopKind, form.stopKinds.join(','));
+    syncSelect(stopWhere, String(form.stopPosition));
+    syncSelect(stopDwell, String(form.stopDwell));
     if (deadlineOn && deadlineTime) {
       deadlineOn.checked = form.deadlineOn;
+      deadlineTime.value = clockValue(form.deadlineMinutes);
       deadlineTime.disabled = !form.deadlineOn;
     }
     if (stopOn) stopOn.checked = form.stopOn;

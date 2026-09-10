@@ -118,7 +118,7 @@ function nearestJunction(point: LatLon): { id: string; km: number } | null {
   return bestId === null ? null : { id: bestId, km: bestKm };
 }
 
-const hourOf = (minutes: number): number => Math.floor(minutes / 60) % 24;
+const hourOf = (minutes: number): number => (minutes / 60) % 24;
 
 /**
  * Find the best places to break this journey.

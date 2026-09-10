@@ -25,12 +25,12 @@
    ===================================================================== */
 import { DEPARTURE_SEARCH, PREFERENCES, STOP_SEARCH, type PreferenceId } from '../../data/intelligence';
 import { geocode } from '../geocoding/resolve';
+import { TIER_CREDENCE } from '../traffic/hierarchy';
 import { confidenceFor, type Confidence } from '../traffic/confidence';
 import { osmPlaces } from '../places/provider';
 import { findStops, type StopCandidate } from '../optimization/stops';
 import {
   assess,
-  optimizeDeparture,
   rankRoutes,
   uncertaintyFor,
   type ScoredRoute,
@@ -58,7 +58,7 @@ import {
 } from './types';
 
 const DEFAULT_DEPART = 17 * 60; // 5 PM: the hour the whole story is about
-const hourOf = (minutes: number): number => Math.floor(minutes / 60) % 24;
+const hourOf = (minutes: number): number => (minutes / 60) % 24;
 
 /* ---------- resolution ---------- */
 
@@ -173,7 +173,8 @@ function stopOption(candidate: StopCandidate, departAt: number, index: number): 
       measured: legToStop.provenance.measured + legFromStop.provenance.measured,
       modeled: legToStop.provenance.modeled + legFromStop.provenance.modeled,
       tiers: {},
-      weakestTier: legToStop.provenance.weakestTier,
+      weakestTier: TIER_CREDENCE[legToStop.provenance.weakestTier] < TIER_CREDENCE[legFromStop.provenance.weakestTier]
+        ? legToStop.provenance.weakestTier : legFromStop.provenance.weakestTier,
     },
   };
   for (const leg of combinedRoute.legs) {
@@ -245,76 +246,44 @@ function applyLabels(options: JourneyOption[]): void {
 
 /* ---------- departure advice ---------- */
 
-/**
- * Work backwards from a deadline.
- *
- * `overheadMinutes` is time the journey will spend not driving — a meal, most
- * often. It has to be part of the search rather than added afterwards: a
- * deadline search that costs only the driving will happily recommend a
- * departure that arrives on time in theory and three quarters of an hour late
- * in fact, because nobody told it about the stop.
- */
-function adviseDeparture(
-  originId: string,
-  destinationId: string,
-  dayType: DayType,
-  preference: PreferenceId,
-  arriveBy: number,
-  overheadMinutes: number,
-): DepartureAdvice | null {
-  const { options, best } = optimizeDeparture(
-    arriveBy,
-    // The window has to cover the journey it is searching for. A fixed window
-    // silently declares an hour-long dinner impossible rather than looking
-    // further back for a departure that accommodates it.
-    DEPARTURE_SEARCH.windowMinutes + overheadMinutes,
-    DEPARTURE_SEARCH.intervalMinutes,
-    DEPARTURE_SEARCH.bufferMinutes,
-    (departMinutes) => {
-      const ranked = rankRoutes(
-        routeOptions(originId, destinationId, hourOf(departMinutes), dayType, 4),
-        preference,
-      );
-      const top = ranked[0];
-      if (!top) return null;
-      return {
-        travelMinutes: top.assessment.uncertainty.expectedMinutes + overheadMinutes,
-        reliability: top.assessment.reliability,
-        score: top.score,
-      };
-    },
-  );
-
-  if (!best) return null;
-
-  const feasible = options.filter((o) => o.feasible);
-  const earliestSensible = Math.min(...feasible.map((o) => o.departAt));
-  const latestSafe = Math.max(...feasible.map((o) => o.departAt));
-
-  // The recommended departure's own spread, so the arrival is a range.
-  const ranked = rankRoutes(
-    routeOptions(originId, destinationId, hourOf(best.departAt), dayType, 4),
-    preference,
-  );
-  const top = ranked[0];
-  const driving = top
-    ? timeRangeFor(top.route.minutes, top.assessment.congestion)
-    : { expectedMinutes: best.travelMinutes, bestMinutes: best.travelMinutes, worstMinutes: best.travelMinutes };
-
-  return {
-    recommended: best.departAt,
-    earliestSensible,
-    latestSafe,
-    // the overhead shifts arrival without widening the band
-    arrival: arrivalFrom(best.departAt, driving, overheadMinutes),
-    bufferMinutes: arriveBy - best.arriveAt,
-    options: options.map((o) => ({
-      departAt: o.departAt,
-      travelMinutes: o.travelMinutes,
-      arriveAt: o.arriveAt,
-      feasible: o.feasible,
-    })),
+/** Evaluate complete journeys, including the selected stop detour and uncertainty band. */
+async function planBeforeDeadline(request: JourneyRequest): Promise<JourneyPlan> {
+  const arriveBy = request.arriveBy!;
+  const { arriveBy: _deadline, ...fixed } = request;
+  const lower = request.departAt ?? 0;
+  const options: DepartureAdvice['options'] = [];
+  let chosen: JourneyPlan | null = null;
+  // Search the stated day in 15-minute steps, latest first. Scores normalized
+  // within different departure times cannot be compared to each other.
+  const departures: number[] = [];
+  for (let at = arriveBy; at >= lower; at -= DEPARTURE_SEARCH.intervalMinutes) departures.push(at);
+  if (lower <= arriveBy && departures[departures.length - 1] !== lower) departures.push(lower);
+  for (const at of departures) {
+    const plan = await planJourney({ ...fixed, departAt: at });
+    const arrival = plan.recommended.arrival;
+    const feasible = arrival.latest + DEPARTURE_SEARCH.bufferMinutes <= arriveBy
+      && (!request.stop || plan.recommended.kind === 'with-stop');
+    options.push({ departAt: at, travelMinutes: plan.recommended.duration.expectedMinutes,
+      arriveAt: arrival.expected, feasible });
+    if (feasible && !chosen) chosen = plan;
+    // Show a useful window before the latest feasible departure, rather than
+    // implying that searching back to midnight finds an optimal early start.
+    if (chosen && at <= chosen.departAt - DEPARTURE_SEARCH.windowMinutes) break;
+  }
+  if (!chosen) throw new JourneyError('DEADLINE_UNREACHABLE',
+    'No checked departure meets the deadline, arrival range and requested constraints.', { arriveBy });
+  const feasible = options.filter(o => o.feasible);
+  chosen.arriveBy = arriveBy;
+  chosen.departure = {
+    recommended: chosen.departAt,
+    earliestSensible: Math.min(...feasible.map(o => o.departAt)),
+    latestSafe: Math.max(...feasible.map(o => o.departAt)),
+    arrival: chosen.recommended.arrival,
+    bufferMinutes: arriveBy - chosen.recommended.arrival.latest,
+    options: options.reverse(),
   };
+  chosen.notices.push('Departure advice uses the modeled arrival range and a buffer; it is not a guarantee. Earlier times are sampled at 15-minute intervals.');
+  return chosen;
 }
 
 /* ---------- the entry point ---------- */
@@ -327,6 +296,7 @@ function adviseDeparture(
  * loading it.
  */
 export async function planJourney(request: JourneyRequest): Promise<JourneyPlan> {
+  if (request.arriveBy !== undefined) return planBeforeDeadline(request);
   const notices: string[] = [];
   const attribution: string[] = [];
 
@@ -349,25 +319,7 @@ export async function planJourney(request: JourneyRequest): Promise<JourneyPlan>
   const dayType: DayType = dayTypeOf(request.date);
   const preference: PreferenceId = request.preference ?? 'BALANCED';
 
-  let departure: DepartureAdvice | null = null;
-  let departAt = request.departAt ?? DEFAULT_DEPART;
-
-  if (request.arriveBy !== undefined) {
-    // The stop is part of the journey, so the deadline search has to pay for it.
-    const overhead = request.stop ? request.stop.dwellMinutes : 0;
-    departure = adviseDeparture(
-      origin.id, destination.id, dayType, preference, request.arriveBy, overhead,
-    );
-    if (!departure) {
-      throw new JourneyError(
-        'DEADLINE_UNREACHABLE',
-        `No departure in the ${Math.round(DEPARTURE_SEARCH.windowMinutes / 60)} hours before the `
-        + 'deadline arrives in time.',
-        { arriveBy: request.arriveBy },
-      );
-    }
-    departAt = departure.recommended;
-  }
+  const departAt = request.departAt ?? DEFAULT_DEPART;
 
   /* 3-5. routes, costed and ranked */
   const candidates = routeOptions(
@@ -439,6 +391,8 @@ export async function planJourney(request: JourneyRequest): Promise<JourneyPlan>
 
   options.sort((a, b) => {
     if (wantsStop && hasStopOption && a.kind !== b.kind) return a.kind === 'with-stop' ? -1 : 1;
+    if (preference === 'FASTEST') return a.duration.expectedMinutes - b.duration.expectedMinutes;
+    if (preference === 'SHORTEST') return a.km - b.km;
     return b.score - a.score;
   });
 
@@ -453,34 +407,6 @@ export async function planJourney(request: JourneyRequest): Promise<JourneyPlan>
   /* 9. explain */
   const preferenceLabel = (PREFERENCES.find((p) => p.id === preference) ?? PREFERENCES[0]!).label;
   const explanation = explainPlan(recommended, trimmed.slice(1), preferenceLabel, ranked);
-
-  // The departure card was costed from the best DIRECT route plus the stop's
-  // dwell, before any stop was chosen. Now that a journey has actually been
-  // selected, the card should describe THAT journey — otherwise the page shows
-  // two arrival times a couple of minutes apart for the same trip, and the
-  // reader has no way to tell which one to believe.
-  if (departure) {
-    departure.arrival = recommended.arrival;
-    if (request.arriveBy !== undefined) {
-      departure.bufferMinutes = request.arriveBy - recommended.arrival.expected;
-    }
-  }
-
-  // Verify the promise rather than assuming the search kept it. The deadline
-  // search costs the best DIRECT route plus the stop's dwell; the journey
-  // finally recommended may take a different route, or a detour to reach the
-  // stop. If the two disagree the reader is told, not quietly given a plan
-  // that misses the deadline it was built around.
-  if (request.arriveBy !== undefined && recommended.arrival.expected > request.arriveBy) {
-    const late = recommended.arrival.expected - request.arriveBy;
-    notices.push(
-      `This journey is expected to arrive about ${fmt(late)} after your `
-      + `${clockOf(request.arriveBy)} deadline. `
-      + (request.stop
-        ? 'Shorten the stop, drop it, or leave earlier.'
-        : 'Leave earlier, or accept arriving late.'),
-    );
-  }
 
   const confidence: Confidence = recommended.confidence;
   if (confidence.level === 'LOW') {
@@ -497,7 +423,7 @@ export async function planJourney(request: JourneyRequest): Promise<JourneyPlan>
     preference,
     recommended,
     alternatives: trimmed.slice(1),
-    departure,
+    departure: null,
     explanation,
     confidence,
     notices,

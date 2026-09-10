@@ -12,7 +12,7 @@
    rejected.
    ===================================================================== */
 import { parseJourneyText } from '../src/core/nl/parse';
-import { validateIntent } from '../src/core/nl/schema';
+import { isCalendarDate, validateIntent } from '../src/core/nl/schema';
 import type { JourneyRequest } from '../src/core/journey/types';
 
 export interface RawJourneyBody {
@@ -42,14 +42,18 @@ export function isoToday(now: Date = new Date()): string {
 
 /** Midday, so a timezone offset cannot roll the date into another day. */
 export function dateFrom(value: unknown, now: Date = new Date()): Date {
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (typeof value === 'string' && isCalendarDate(value)) {
     const parsed = new Date(`${value}T12:00:00`);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
   return now;
 }
 
-export function toJourneyRequest(body: RawJourneyBody, now: Date = new Date()): ShapeResult {
+export function toJourneyRequest(raw: unknown, now: Date = new Date()): ShapeResult {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return { problems: ['Request body must be a JSON object.'] };
+  }
+  const body = raw as RawJourneyBody;
   // A body may name places directly, or hand over a sentence to be read first.
   if (typeof body.text === 'string' && body.text.trim()) {
     const parsed = parseJourneyText(body.text, now);

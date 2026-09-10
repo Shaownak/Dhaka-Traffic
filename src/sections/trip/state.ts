@@ -7,6 +7,7 @@
    ===================================================================== */
 import type { PreferenceId } from '../../data/intelligence';
 import type { JourneyPlan, JourneyRequest, StopConstraint } from '../../core/journey/types';
+import type { JourneyIntent } from '../../core/nl/schema';
 import type { PlaceKind } from '../../core/places/provider';
 
 /* ---------- what the reader has asked for ---------- */
@@ -23,6 +24,9 @@ export interface FormState {
   stopKinds: PlaceKind[];
   stopPosition: number;
   stopDwell: number;
+  stopCuisine?: string;
+  stopRequireOpen?: boolean;
+  earliestDeparture?: number;
 }
 
 export const form: FormState = {
@@ -59,6 +63,7 @@ export function requestFromState(): JourneyRequest {
   };
   if (form.deadlineOn) request.arriveBy = form.deadlineMinutes;
   else request.departAt = form.departMinutes;
+  if (form.deadlineOn && form.earliestDeparture !== undefined) request.departAt = form.earliestDeparture;
 
   if (form.stopOn) {
     const stop: StopConstraint = {
@@ -66,8 +71,31 @@ export function requestFromState(): JourneyRequest {
       position: form.stopPosition,
       dwellMinutes: form.stopDwell,
     };
+    if (form.stopCuisine !== undefined) stop.cuisine = form.stopCuisine;
+    if (form.stopRequireOpen !== undefined) stop.requireOpen = form.stopRequireOpen;
     request.stop = stop;
   }
   return request;
 }
 
+
+/** Replace the whole request so a sentence cannot inherit a previous constraint. */
+export function applyIntent(intent: JourneyIntent): void {
+  form.fromId = intent.origin;
+  form.toId = intent.destination;
+  form.date = new Date(intent.date + 'T12:00:00');
+  form.departMinutes = intent.departAt ?? 17 * 60;
+  form.deadlineOn = intent.arriveBy !== undefined;
+  form.deadlineMinutes = intent.arriveBy ?? 19 * 60;
+  form.preference = intent.preference ?? 'BALANCED';
+  form.stopOn = Boolean(intent.stop);
+  form.stopKinds = [...(intent.stop?.kinds ?? ['restaurant', 'cafe', 'fast_food'])];
+  form.stopPosition = intent.stop?.position ?? 0.5;
+  form.stopDwell = intent.stop?.dwellMinutes ?? 45;
+  delete form.stopCuisine;
+  delete form.stopRequireOpen;
+  delete form.earliestDeparture;
+  if (intent.stop?.cuisine !== undefined) form.stopCuisine = intent.stop.cuisine;
+  if (intent.stop?.requireOpen !== undefined) form.stopRequireOpen = intent.stop.requireOpen;
+  if (intent.arriveBy !== undefined && intent.departAt !== undefined) form.earliestDeparture = intent.departAt;
+}

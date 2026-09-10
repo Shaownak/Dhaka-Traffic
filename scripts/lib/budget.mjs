@@ -1,5 +1,5 @@
 /**
- * SPEND GUARD — makes it impossible for a collector to run away with the bill.
+ * SPEND GUARD — reserves attempts atomically before a collector calls a paid API.
  *
  * The usual safeguard is a daily quota cap in the Google Cloud console. That is
  * not available here: the API key belongs to a SHARED organisational project,
@@ -23,7 +23,9 @@
  *
  * The ledger lives in data/.budget/ and is gitignored.
  */
-import { mkdir, readFile, writeFile, appendFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, appendFile, rename, rm, rmdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,10 +38,9 @@ const DIR = join(ROOT, 'data', '.budget');
  */
 export const DEFAULT_DAILY_LIMIT = 200;
 
-/** Local date, so a "day" means what the operator means by it. */
+/** All runners use Dhaka's calendar day, including UTC CI hosts. */
 function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 /**
@@ -65,56 +66,64 @@ export async function openBudget(name, limit = DEFAULT_DAILY_LIMIT, options = {}
   // `dir` and `date` exist so the guard itself can be tested. A ceiling nobody
   // has watched hold is not a ceiling.
   const dir = options.dir ?? DIR;
-  const day = options.date ?? today();
-  const file = join(dir, `${name}.json`);
-  const log = join(dir, `${name}.log`);
-  await mkdir(dir, { recursive: true });
-
-  let state = { date: day, spent: 0 };
-  try {
-    const parsed = JSON.parse(await readFile(file, 'utf8'));
-    // a ledger from a previous day starts over
-    if (parsed.date === state.date) state = parsed;
-  } catch {
-    // no ledger yet, or an unreadable one: start clean
+  if (!/^[a-zA-Z0-9_-]+$/.test(name) || !Number.isSafeInteger(limit) || limit < 1) {
+    throw new Error('Invalid budget name or limit.');
   }
-
-  const persist = async () => {
-    await writeFile(file, JSON.stringify(state, null, 2) + '\n', 'utf8');
+  const currentDay = () => options.date ?? today();
+  const file = join(dir, name + '.json');
+  const lock = file + '.lock';
+  const log = join(dir, name + '.log');
+  await mkdir(dir, { recursive: true });
+  const readState = async () => {
+    const day = currentDay();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('Invalid budget date.');
+    let parsed;
+    try { parsed = JSON.parse(await readFile(file, 'utf8')); }
+    catch (error) {
+      if (error.code === 'ENOENT') return { date: day, spent: 0 };
+      throw new Error('Budget ledger unreadable; refusing to spend.', { cause: error });
+    }
+    if (!parsed || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
+        || !Number.isSafeInteger(parsed.spent) || parsed.spent < 0 || parsed.date > day) {
+      throw new Error('Invalid budget ledger; refusing to spend.');
+    }
+    return parsed.date === day ? parsed : { date: day, spent: 0 };
   };
-
+  let state = await readState();
+  const validCount = n => Number.isSafeInteger(n) && n > 0;
   return {
-    name,
-    limit,
-    get spent() {
-      return state.spent;
-    },
-    get remaining() {
-      return Math.max(0, limit - state.spent);
-    },
-
-    /** Whether `n` more requests are allowed today. */
-    canSpend(n = 1) {
-      return state.spent + n <= limit;
-    },
-
-    /**
-     * Record requests that have been made. Call this for every ATTEMPT,
-     * including failures — a request that errors is still billed.
-     */
+    name, limit,
+    get spent() { return state.spent; },
+    get remaining() { return Math.max(0, limit - state.spent); },
+    // Advisory snapshot only. record() is the authoritative reservation.
+    canSpend(n = 1) { return validCount(n) && state.spent + n <= limit; },
+    /** Reserve BEFORE the paid attempt. Failed attempts are never refunded. */
     async record(n = 1, note = '') {
-      state.spent += n;
-      await persist();
-      await appendFile(
-        log,
-        `${new Date().toISOString()}\t${n}\t${state.spent}/${limit}\t${note}\n`,
-        'utf8',
-      );
+      if (!validCount(n)) throw new Error('Budget count must be a positive integer.');
+      const deadline = Date.now() + 3000;
+      for (;;) {
+        try { await mkdir(lock); break; }
+        catch (error) {
+          if (error.code !== 'EEXIST') throw error;
+          if (Date.now() >= deadline) throw new Error('Budget lock unavailable; refusing to spend.');
+          await delay(10);
+        }
+      }
+      const temporary = file + '.' + randomUUID() + '.tmp';
+      try {
+        state = await readState();
+        if (state.spent + n > limit) throw new Error('Budget exhausted; refusing to spend.');
+        const next = { date: state.date, spent: state.spent + n };
+        await writeFile(temporary, JSON.stringify(next, null, 2) + '\n', { encoding: 'utf8', flag: 'wx', flush: true });
+        await rename(temporary, file);
+        state = next;
+        await appendFile(log, new Date().toISOString() + '\t' + n + '\t' + state.spent + '/' + limit + '\t' + note + '\n');
+      } finally {
+        await rm(temporary, { force: true });
+        await rmdir(lock);
+      }
     },
-
-    report() {
-      return `${state.spent} of ${limit} requests used today (${this.remaining} left)`;
-    },
+    report() { return state.spent + ' of ' + limit + ' requests used today (' + this.remaining + ' left)'; },
   };
 }
 

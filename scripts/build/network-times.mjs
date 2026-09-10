@@ -9,8 +9,8 @@
  * samples exist for the same cell the median is taken, so one blocked evening
  * cannot drag an hour on its own.
  *
- * The planner picks this up automatically and switches its own label from
- * "modeled" to "measured". Nothing else has to change.
+ * These are Google forecasts, not observed journeys. The planner labels
+ * them as provider forecasts and assigns zero observed samples.
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -52,7 +52,9 @@ async function main() {
   }
 
   const rows = text.split('\n').filter(Boolean).map((l) => JSON.parse(l));
-  const good = rows.filter((r) => !r.error && typeof r.minutes === 'number');
+  const good = rows.filter((r) => !r.error && Number.isFinite(r.minutes) && r.minutes > 0
+    && ['working', 'weekend'].includes(r.dayType) && Number.isInteger(r.localHour)
+    && r.localHour >= 0 && r.localHour < 24 && typeof r.road === 'string');
   if (!good.length) {
     console.error('No usable samples. Nothing written.');
     process.exit(1);
@@ -121,7 +123,7 @@ async function main() {
       working,
       weekend,
       stats: { working: stats(entry.working), weekend: stats(entry.weekend) },
-      lastObservedAt: entry.lastAt ?? null,
+      lastForecastCollectedAt: entry.lastAt ?? null,
     };
   }
 
@@ -130,6 +132,7 @@ async function main() {
     note: 'Generated. Do not edit by hand.',
     generatedAt: new Date().toISOString(),
     source: 'Google Routes API, predictive departureTime',
+    evidence: 'provider-estimate',
     departureDates: departures.length
       ? { from: departures[0], to: departures[departures.length - 1] }
       : null,

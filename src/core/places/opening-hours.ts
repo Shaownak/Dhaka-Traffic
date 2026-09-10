@@ -145,24 +145,15 @@ export function isOpenAt(spec: string | undefined, date: Date): OpenState {
   const minutes = date.getHours() * 60 + date.getMinutes();
   const yesterday = (day + 6) % 7;
 
-  let mentioned = false;
-
-  for (const rule of rules) {
-    if (rule.days.has(day)) {
-      mentioned = true;
-      if (rule.closed) continue;
-      for (const span of rule.spans) {
-        if (minutes >= span.from && minutes < span.to) return 'open';
-      }
-    }
-    // a span that began yesterday and runs past midnight covers this morning
-    if (rule.days.has(yesterday) && !rule.closed) {
-      for (const span of rule.spans) {
-        if (span.to > 1440 && minutes + 1440 >= span.from && minutes + 1440 < span.to) return 'open';
-      }
-    }
-  }
-
-  // Every rule parsed, so silence about today genuinely means closed.
-  return mentioned || rules.length > 0 ? 'closed' : 'unknown';
+  // Later day rules replace earlier ones. Check today's override before
+  // allowing an overnight span from the previous day.
+  const todayIndex = rules.map(rule => rule.days.has(day)).lastIndexOf(true);
+  const previousIndex = rules.map(rule => rule.days.has(yesterday)).lastIndexOf(true);
+  const todayRule = rules[todayIndex];
+  if (todayRule?.closed) return 'closed';
+  if (todayRule?.spans.some(span => minutes >= span.from && minutes < span.to)) return 'open';
+  const previous = rules[previousIndex];
+  if (previous && !previous.closed && previousIndex >= todayIndex
+      && previous.spans.some(span => minutes + 1440 >= span.from && minutes + 1440 < span.to)) return 'open';
+  return 'closed';
 }

@@ -200,9 +200,9 @@ function drawDeparture(plan: JourneyPlan): void {
   host.append(el('h3', 'result-title', 'When to leave'));
   const grid = el('div', 'depart-grid');
   for (const [label, value, note] of [
-    ['Earliest sensible', clock(d.earliestSensible), 'no gain in leaving before this'],
+    ['Earliest checked', clock(d.earliestSensible), 'earlier departures were not evaluated'],
     ['Recommended', clock(d.recommended), `arrive ${clock(d.arrival.earliest)}–${clock(d.arrival.latest)}`],
-    ['Latest safe', clock(d.latestSafe), `${fmt(d.bufferMinutes)} spare at the recommended time`],
+    ['Latest within model', clock(d.latestSafe), `${fmt(d.bufferMinutes)} beyond the modeled arrival range`],
   ] as const) {
     const cell = el('div', `depart-cell${label === 'Recommended' ? ' depart-best' : ''}`);
     cell.append(
@@ -277,17 +277,18 @@ export function render(plan: JourneyPlan): void {
     }
   }
 
-  if (why) why.textContent = plan.explanation;
+  if (why) why.textContent = shown.id === plan.recommended.id ? plan.explanation
+    : 'Selected alternative. ' + shown.reasons.join(' ') + ' ' + shown.confidence.reasons.join(' ');
 
   drawTimeline(plan, shown);
-  drawDeparture(plan);
+  drawDeparture(shown.id === plan.recommended.id ? plan : { ...plan, departure: null });
   listOptions(plan);
   drawMap(plan, shown);
 
   if (plan.departure) {
     drawCurve(
       plan.departure.options.map((o) => ({
-        hour: Math.floor(o.departAt / 60) % 24,
+        hour: (o.departAt / 60) % 24,
         minutes: o.travelMinutes,
       })),
       Math.floor(plan.departAt / 60) % 24,
@@ -330,6 +331,18 @@ function hourlyShape(plan: JourneyPlan): { hour: number; minutes: number }[] {
 /* ---------- errors ---------- */
 
 export function showError(message: string): void {
+  view.current = null;
+  view.selectedId = null;
+  for (const id of ['tripChips', 'tripDepart', 'tripProvenance', 'tripMap', 'tripNotices']) {
+    const host = document.getElementById(id);
+    if (host) host.textContent = '';
+  }
+
+  document.getElementById('tripMap')?.setAttribute('aria-label', 'No route to display');
+  const advice = document.getElementById('tripDepart');
+  if (advice) advice.hidden = true;
+  const eyebrow = document.getElementById('tripEyebrow');
+  if (eyebrow) eyebrow.textContent = 'Journey unavailable';
   const headline = document.getElementById('tripHeadline');
   const detail = document.getElementById('tripDetail');
   const why = document.getElementById('tripWhy');

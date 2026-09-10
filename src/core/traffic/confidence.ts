@@ -136,8 +136,8 @@ export function confidenceFor(route: Route, options?: { weatherKnown?: boolean }
   // The headline reason goes first: what is actually behind these numbers.
   if (coverage === 0) {
     reasons.unshift(
-      `No journey times have been collected for this route. Every leg uses the `
-      + `${TIER_LABEL[route.provenance.weakestTier].toLowerCase()}, which is an estimate, not a measurement.`,
+      `No journey times have been collected for this route. The weakest evidence is the `
+      + `${TIER_LABEL[route.provenance.weakestTier].toLowerCase()}; these are estimates, not measurements.`,
     );
   } else if (coverage < 1) {
     reasons.unshift(

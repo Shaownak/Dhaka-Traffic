@@ -64,6 +64,12 @@ const ALLOWED_STOP = new Set([
   'kinds', 'position', 'dwellMinutes', 'cuisine', 'requireOpen',
 ]);
 
+export function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + 'T12:00:00Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -77,7 +83,7 @@ function checkMinutes(value: unknown, field: string, problems: string[]): number
     problems.push(`${field} must be a number of minutes after midnight.`);
     return undefined;
   }
-  if (value < 0 || value >= MINUTES_IN_DAY) {
+  if (value < 0 || Math.round(value) >= MINUTES_IN_DAY) {
     problems.push(`${field} must be between 0 and ${MINUTES_IN_DAY - 1}.`);
     return undefined;
   }
@@ -170,7 +176,7 @@ export function validateIntent(raw: unknown): ValidationResult {
   let date = '';
   if (typeof raw.date !== 'string' || !ISO_DATE.test(raw.date)) {
     problems.push('date is required and must look like YYYY-MM-DD.');
-  } else if (Number.isNaN(Date.parse(`${raw.date}T12:00:00`))) {
+  } else if (!isCalendarDate(raw.date)) {
     problems.push(`date "${raw.date}" is not a real date.`);
   } else {
     date = raw.date;

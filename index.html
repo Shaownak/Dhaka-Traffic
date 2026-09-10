@@ -372,6 +372,14 @@
                 <option value="90">90 min</option>
               </select>
             </label>
+            <div class="pf-field">
+              <label for="tripStopCuisine">Cuisine (optional)</label>
+              <input type="text" id="tripStopCuisine" maxlength="40" placeholder="Any cuisine" disabled>
+            </div>
+            <label class="pf-toggle">
+              <input type="checkbox" id="tripStopOpen" checked disabled>
+              <span>Exclude places listed as closed (unknown hours may remain)</span>
+            </label>
           </div>
         </div>
       </div>
@@ -440,7 +448,7 @@
       </div>
     </div>
 
-    <p class="trip-note">Journey times are estimates, not a forecast of one particular day. A date two days out can only tell you what a typical working day or weekend looks like — nobody can know that evening's incidents in advance. Road speeds here are modeled; the collector that would replace them with measured times is published with the project. Places to stop come from OpenStreetMap contributors, which carries no ratings and states opening hours for only about one place in six.</p>
+    <p class="trip-note">Journey times are estimates, not a forecast of one particular day. A date two days out can only tell you what a typical working day or weekend looks like — nobody can know that evening's incidents in advance. Road speeds here are modeled; the published collector can supply provider forecasts, which are also estimates rather than observed journeys. Places to stop come from OpenStreetMap contributors, which carries no ratings and states opening hours for only about one place in six.</p>
   </div>
 </section>
 

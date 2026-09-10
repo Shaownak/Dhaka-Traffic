@@ -181,6 +181,7 @@ async function main() {
         try {
           const result = await sample(from, to, departure);
           rows.push({
+            evidence: 'provider-estimate',
             collectedAt: new Date().toISOString(),
             departureTime: departure.toISOString(),
             dayType: day.dayType,

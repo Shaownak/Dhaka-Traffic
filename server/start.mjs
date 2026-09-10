@@ -9,4 +9,5 @@ import { registerTsLoader } from '../scripts/lib/ts-loader.mjs';
 
 registerTsLoader();
 
-await import('./api.ts');
+const { startServer } = await import('./api.ts');
+startServer();

@@ -1,7 +1,7 @@
 /* =====================================================================
    TRAFFIC ESTIMATION — a hierarchy of sources, honest about which answered
 
-   Every travel time in this system comes from exactly one of five tiers, and
+   Every travel time in this system comes from exactly one of six tiers, and
    the tier travels with the number all the way to the screen. That is the
    whole design. A system that cannot say where a number came from will
    eventually present a guess as a measurement, and the reader has no way to
@@ -9,15 +9,15 @@
 
        observed   a recent measurement of this road          (needs a live feed)
        profile    a statistic over collected samples         (needs collection)
+       provider   a traffic provider forecast, not an observation
        predicted  a fitted model                             (needs both, first)
        baseline   the road's modeled speeds, shaped by hour
        freeflow   the road with no traffic at all            (last resort)
 
    AS SHIPPED, ONLY baseline AND freeflow CAN ANSWER. There is no live traffic
    feed and no collected series, so nothing else is reachable. The tiers above
-   are not aspirational scaffolding: the profile tier activates by itself the
-   moment scripts/build/network-times.mjs writes a non-empty file, with no code
-   change. The observed and predicted tiers require infrastructure that does
+   are not aspirational scaffolding: provider forecasts activate only the provider tier; a historical profile
+   requires an explicitly identified observed-journey dataset. The observed and predicted tiers require infrastructure that does
    not exist, and they return null until it does rather than quietly falling
    back to something that looks similar.
    ===================================================================== */
@@ -27,17 +27,18 @@ import measured from '../../data/measured/network-times.json';
 
 export type DayType = 'working' | 'weekend';
 
-export type TrafficTier = 'observed' | 'profile' | 'predicted' | 'baseline' | 'freeflow';
+export type TrafficTier = 'observed' | 'profile' | 'provider' | 'predicted' | 'baseline' | 'freeflow';
 
 /** Highest first. The resolver walks this order and takes the first answer. */
 export const TIER_ORDER: readonly TrafficTier[] = [
-  'observed', 'profile', 'predicted', 'baseline', 'freeflow',
+  'observed', 'profile', 'predicted', 'provider', 'baseline', 'freeflow',
 ];
 
 export const TIER_LABEL: Record<TrafficTier, string> = {
   observed: 'Recently observed',
   profile: 'Historical profile',
   predicted: 'Model prediction',
+  provider: 'Provider forecast',
   baseline: 'Modeled baseline',
   freeflow: 'Free-flow estimate',
 };
@@ -52,6 +53,7 @@ export const TIER_CREDENCE: Record<TrafficTier, number> = {
   observed: 1.00,
   profile: 0.85,
   predicted: 0.70,
+  provider: 0.40,
   baseline: 0.35,
   freeflow: 0.15,
 };
@@ -88,22 +90,28 @@ interface MeasuredRoad {
   lastObservedAt?: string | null;
 }
 
-interface MeasuredFile {
+export interface MeasuredFile {
+  evidence?: 'observed-journeys' | 'provider-estimate';
+  source?: string | null;
   roads?: Record<string, MeasuredRoad>;
   generatedAt?: string | null;
 }
 
 const dataset = measured as MeasuredFile;
-const profileRoads = dataset.roads ?? {};
-const generatedAt = dataset.generatedAt ? Date.parse(dataset.generatedAt) : NaN;
-
-/** True once any road carries collected times. */
-export function hasProfileData(): boolean {
-  return Object.keys(profileRoads).length > 0;
+function dataTier(data: MeasuredFile): 'profile' | 'provider' | null {
+  if (data.evidence === 'provider-estimate' || data.source?.includes('predictive departureTime')) return 'provider';
+  return data.evidence === 'observed-journeys' ? 'profile' : null;
 }
-
-function entryFor(road: Road): MeasuredRoad | null {
-  return profileRoads[`${road.a}|${road.b}`] ?? profileRoads[`${road.b}|${road.a}`] ?? null;
+function containsTimes(data: MeasuredFile): boolean {
+  return Object.values(data.roads ?? {}).some(road =>
+    [...(road.working ?? []), ...(road.weekend ?? [])].some(v => typeof v === 'number' && Number.isFinite(v) && v > 0));
+}
+/** Provider forecasts never count as collected journey observations. */
+export function hasProfileData(): boolean {
+  return dataTier(dataset) === 'profile' && containsTimes(dataset);
+}
+export function hasProviderData(): boolean {
+  return dataTier(dataset) === 'provider' && containsTimes(dataset);
 }
 
 const hourIndex = (hour: number): number => ((Math.floor(hour) % 24) + 24) % 24;
@@ -116,27 +124,29 @@ function observed(): TrafficEstimate | null {
 }
 
 /* ---------- tier 2: historical profile ---------- */
-function profile(road: Road, hour: number, dayType: DayType): TrafficEstimate | null {
-  const entry = entryFor(road);
+export function estimateFromDataset(road: Road, hour: number, dayType: DayType, data: MeasuredFile = dataset): TrafficEstimate | null {
+  const tier = dataTier(data);
+  if (!tier) return null;
+  const entry = data.roads?.[road.a + '|' + road.b] ?? data.roads?.[road.b + '|' + road.a];
   if (!entry) return null;
 
   const h = hourIndex(hour);
   const series = dayType === 'weekend' ? entry.weekend : entry.working;
   const minutes = series?.[h];
   // A road half-collected does not get to guess at the hours it is missing.
-  if (typeof minutes !== 'number' || minutes <= 0) return null;
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) return null;
 
   const cell = (dayType === 'weekend' ? entry.stats?.weekend : entry.stats?.working)?.[h] ?? null;
-  const observedAt = entry.lastObservedAt ? Date.parse(entry.lastObservedAt) : generatedAt;
+  const observedAt = entry.lastObservedAt ? Date.parse(entry.lastObservedAt) : NaN;
 
   return {
     minutes,
     kmh: (road.km / minutes) * 60,
-    tier: 'profile',
-    samples: cell?.n ?? 0,
-    p10Minutes: cell?.p10 ?? null,
-    p90Minutes: cell?.p90 ?? null,
-    ageHours: Number.isFinite(observedAt) ? (Date.now() - observedAt) / 3_600_000 : null,
+    tier,
+    samples: tier === 'profile' ? cell?.n ?? 0 : 0,
+    p10Minutes: tier === 'profile' ? cell?.p10 ?? null : null,
+    p90Minutes: tier === 'profile' ? cell?.p90 ?? null : null,
+    ageHours: tier === 'profile' && Number.isFinite(observedAt) ? Math.max(0, (Date.now() - observedAt) / 3_600_000) : null,
   };
 }
 
@@ -182,10 +192,24 @@ export function roadSpeed(road: Road, hour: number, dayType: DayType): number {
 }
 
 function baseline(road: Road, hour: number, dayType: DayType): TrafficEstimate | null {
-  const kmh = roadSpeed(road, hour, dayType);
-  if (!(kmh > 0)) return null;
+  // Integrate distance through hourly speed bands. Pricing the entire leg
+  // at entry speed creates jumps where leaving later can arrive earlier,
+  // invalidating time-dependent Dijkstra's FIFO assumption.
+  let remaining = road.km;
+  let elapsedHours = 0;
+  while (remaining > 1e-9) {
+    const at = hour + elapsedHours;
+    const speed = roadSpeed(road, at, dayType);
+    if (!Number.isFinite(speed) || speed <= 0) return null;
+    const span = Math.floor(at + 1e-9) + 1 - at;
+    const used = Math.min(remaining / speed, span);
+    remaining -= used * speed;
+    elapsedHours += used;
+  }
+  const minutes = elapsedHours * 60;
+  const kmh = minutes > 0 ? road.km / elapsedHours : roadSpeed(road, hour, dayType);
   return {
-    minutes: (road.km / kmh) * 60,
+    minutes,
     kmh,
     tier: 'baseline',
     samples: 0,
@@ -218,7 +242,7 @@ function freeflow(road: Road): TrafficEstimate {
 export function estimateLeg(road: Road, hour: number, dayType: DayType): TrafficEstimate {
   return (
     observed() ??
-    profile(road, hour, dayType) ??
+    estimateFromDataset(road, hour, dayType) ??
     predicted() ??
     baseline(road, hour, dayType) ??
     freeflow(road)
@@ -229,6 +253,7 @@ export function estimateLeg(road: Road, hour: number, dayType: DayType): Traffic
 export function availableTiers(): TrafficTier[] {
   const tiers: TrafficTier[] = [];
   if (hasProfileData()) tiers.push('profile');
+  if (hasProviderData()) tiers.push('provider');
   tiers.push('baseline', 'freeflow');
   return tiers;
 }

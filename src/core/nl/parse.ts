@@ -74,10 +74,11 @@ function findTimes(text: string): TimeHit[] {
     const explicit = Boolean(meridiem) || Boolean(match[2]);
     if (!explicit && cue === null) continue;
 
+    if (meridiem && (hour < 1 || hour > 12)) continue;
     if (meridiem === 'pm' && hour < 12) hour += 12;
     if (meridiem === 'am' && hour === 12) hour = 0;
     // No meridiem: assume the waking hours somebody would actually travel in.
-    if (!meridiem && hour >= 1 && hour <= 7) hour += 12;
+    if (!meridiem && !match[2] && hour >= 1 && hour <= 7) hour += 12;
 
     if (hour > 23) continue;
     hits.push({ minutes: hour * 60 + minute, at, cue, explicit });
@@ -94,15 +95,15 @@ function findDate(text: string, now: Date): { date: Date; said: string | null } 
   const base = new Date(now);
   base.setHours(12, 0, 0, 0);
 
-  if (/\btomorrow\b/.test(lower)) {
-    const d = new Date(base);
-    d.setDate(d.getDate() + 1);
-    return { date: d, said: 'tomorrow' };
-  }
   if (/\bday after tomorrow\b/.test(lower)) {
     const d = new Date(base);
     d.setDate(d.getDate() + 2);
     return { date: d, said: 'the day after tomorrow' };
+  }
+  if (/\btomorrow\b/.test(lower)) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + 1);
+    return { date: d, said: 'tomorrow' };
   }
   if (/\btonight\b|\btoday\b|\bthis evening\b|\bthis afternoon\b/.test(lower)) {
     return { date: base, said: 'today' };
@@ -266,8 +267,9 @@ export function parseJourneyText(text: string, now: Date = new Date()): ParseRes
 
   /* --- stop --- */
   let stop: JourneyIntent['stop'] = null;
+  const stopText = lower.replace(/\b(?:no|without|skip|avoid|don't|do not)\s+(?:a\s+|any\s+|stopping\s+(?:for|at)\s+|stop\s+(?:for|at)\s+)?(?:restaurant|food|meal|coffee|cafe|tea|dinner|lunch|breakfast|eat|eating)(?:\s+stop)?\b/g, '');
   for (const kind of KIND_WORDS) {
-    if (!kind.pattern.test(lower)) continue;
+    if (!kind.pattern.test(stopText)) continue;
 
     let position = 0.5;
     let positionSaid = 'halfway';

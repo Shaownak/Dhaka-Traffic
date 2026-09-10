@@ -76,11 +76,11 @@ describe('the ceiling', () => {
     expect(b.canSpend(3)).toBe(false);
   });
 
-  it('never reports negative headroom', async () => {
+  it('refuses reservations even when the caller ignores canSpend', async () => {
     const b = await openBudget('t', 5, { dir });
-    await b.record(99); // a caller ignoring canSpend
-    expect(b.remaining).toBe(0);
-    expect(b.canSpend(1)).toBe(false);
+    await expect(b.record(99)).rejects.toThrow(/exhausted/i);
+    expect(b.spent).toBe(0);
+    expect(b.remaining).toBe(5);
   });
 });
 
@@ -112,11 +112,10 @@ describe('the ledger survives the process', () => {
     expect(b.spent).toBe(0);
   });
 
-  it('starts clean rather than throwing on a corrupt ledger', async () => {
+  it('fails closed on a corrupt ledger', async () => {
     const { writeFile } = await import('node:fs/promises');
     await writeFile(join(dir, 't.json'), 'not json at all', 'utf8');
-    const b = await openBudget('t', 10, { dir });
-    expect(b.spent).toBe(0);
+    await expect(openBudget('t', 10, { dir })).rejects.toThrow(/unreadable/i);
   });
 });
 
@@ -139,5 +138,34 @@ describe('the audit trail', () => {
     await b.record(1);
     const onDisk = JSON.parse(await readFile(join(dir, 't.json'), 'utf8'));
     expect(onDisk.spent).toBe(1);
+  });
+});
+
+
+describe('atomic reservations', () => {
+  it('only one concurrent instance may reserve the last attempt', async () => {
+    const budgets = await Promise.all(Array.from({ length: 8 }, () => openBudget('shared', 1, { dir })));
+    const outcomes = await Promise.allSettled(budgets.map(b => b.record(1)));
+    expect(outcomes.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect(JSON.parse(await readFile(join(dir, 'shared.json'), 'utf8')).spent).toBe(1);
+  });
+
+  it('coordinates independent Node processes through the same ledger', async () => {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const run = promisify(execFile);
+    const source = new URL('./budget.mjs', import.meta.url).href;
+    const code = 'import { openBudget } from ' + JSON.stringify(source) + '; const b = await openBudget("processes", 2, { dir: ' + JSON.stringify(dir) + ' }); try { await b.record(); console.log("reserved"); } catch { console.log("refused"); }';
+    const results = await Promise.all(Array.from({ length: 6 }, () => run(process.execPath, ['--input-type=module', '-e', code])));
+    expect(results.filter(r => r.stdout.trim() === 'reserved')).toHaveLength(2);
+    expect(JSON.parse(await readFile(join(dir, 'processes.json'), 'utf8')).spent).toBe(2);
+  });
+
+  it('does not permit negative counts or altered ledgers to reset spending', async () => {
+    const b = await openBudget('t', 2, { dir });
+    await expect(b.record(-1)).rejects.toThrow();
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(join(dir, 't.json'), '{"date":"2026-09-10","spent":-4}');
+    await expect(b.record()).rejects.toThrow(/ledger/i);
   });
 });
